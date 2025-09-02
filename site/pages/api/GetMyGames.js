@@ -75,6 +75,93 @@ export default async function handler(req, res) {
       
       console.log(`[GetMyGames] Game "${gameName}" has ${posts.length} posts`);
       
+      // Transform posts to include all the fields that GetAllPosts.js provides
+      const transformedPosts = posts.map(post => {
+        const fields = post.fields || {};
+        
+        // Handle attachments (both Airtable and S3)
+        const attachments = (() => {
+          const airtableAttachments = Array.isArray(fields.Attachements)
+            ? fields.Attachements
+                .map((a) => ({ url: a?.url, type: a?.type, filename: a?.filename, id: a?.id, size: a?.size }))
+                .filter((a) => a.url)
+            : [];
+          
+          // Add S3 attachment links
+          const attachmentLinks = fields.AttachementLinks || '';
+          const s3Attachments = attachmentLinks
+            ? attachmentLinks.split(',').map(link => link.trim()).filter(link => link).map(url => {
+                const filename = url.split('/').pop() || 'attachment';
+                let ext = '';
+                
+                // Try to get extension from filename first
+                if (filename.includes('.')) {
+                  ext = filename.split('.').pop().toLowerCase();
+                } 
+                // If no extension in filename, try to get it from the URL path
+                else {
+                  const urlPath = new URL(url).pathname;
+                  const pathParts = urlPath.split('.');
+                  if (pathParts.length > 1) {
+                    ext = pathParts[pathParts.length - 1].toLowerCase();
+                  }
+                }
+                
+                // Determine content type from file extension
+                let contentType = 'application/octet-stream';
+                if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
+                  contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                } else if (['mp4', 'webm', 'mov', 'm4v', 'avi', 'mkv', 'mpg', 'mpeg'].includes(ext)) {
+                  contentType = `video/${ext}`;
+                } else if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)) {
+                  contentType = `audio/${ext}`;
+                }
+                
+                return {
+                  url: url,
+                  type: contentType,
+                  filename: filename.includes('.') ? filename : `attachment.${ext}`,
+                  id: `s3-${Date.now()}`,
+                  size: 0
+                };
+              })
+            : [];
+          
+          return [...airtableAttachments, ...s3Attachments];
+        })();
+
+        // Determine thumbnail: prefer post's GameThumbnail, then game's Thumbnail
+        let gameThumbnail = '';
+        if (typeof fields.GameThumbnail === 'string') {
+          gameThumbnail = fields.GameThumbnail;
+        } else if (Array.isArray(fields.GameThumbnail) && fields.GameThumbnail[0]?.url) {
+          gameThumbnail = fields.GameThumbnail[0].url;
+        } else if (Array.isArray(rec.fields?.Thumbnail) && rec.fields.Thumbnail[0]?.url) {
+          gameThumbnail = rec.fields.Thumbnail[0].url;
+        }
+
+        return {
+          id: post.id,
+          createdTime: post.createdTime,
+          'Created At': fields['Created At'] || post.createdTime || '',
+          PlayLink: typeof fields.PlayLink === 'string' ? fields.PlayLink : '',
+          Attachements: attachments,
+          'slack id': fields['slack id'] || '',
+          'Game Name': fields['Game Name'] || '',
+          Content: fields.Content || '',
+          PostID: fields.PostID || '',
+          GameThumbnail: gameThumbnail,
+          Badges: Array.isArray(fields.Badges) ? fields.Badges : [],
+          postType: fields.PostType || 'devlog',
+          timelapseVideoId: fields.Timelapse || '',
+          githubImageLink: fields['Link to Github Asset'] || '',
+          timeScreenshotId: fields.TimeScreenshotFile || '',
+          hoursSpent: fields.HoursSpent || 0,
+          minutesSpent: 0,
+          posterShomatoSeeds: fields.PosterShomatoSeeds || 0,
+        };
+      });
+      
       return {
         id: gameId,
         name: gameName,
@@ -94,7 +181,7 @@ export default async function handler(req, res) {
         AverageMoodScore: rec.fields?.AverageMoodScore || 0,
         numberComplete: rec.fields?.numberComplete || 0,
         Feedback: rec.fields?.Feedback || '',
-        posts,
+        posts: transformedPosts,
       };
     });
 
