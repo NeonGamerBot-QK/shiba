@@ -49,6 +49,8 @@ export default async function handler(req, res) {
         gameFieldType: typeof allPosts[0].fields?.Game,
         isArray: Array.isArray(allPosts[0].fields?.Game),
         gameNameField: allPosts[0].fields?.['Game Name'],
+        contentField: allPosts[0].fields?.Content,
+        contentFieldType: typeof allPosts[0].fields?.Content,
         allFields: Object.keys(allPosts[0].fields || {})
       });
     } else {
@@ -148,10 +150,10 @@ export default async function handler(req, res) {
           Attachements: attachments,
           'slack id': fields['slack id'] || '',
           'Game Name': fields['Game Name'] || '',
-          Content: fields.Content || '',
+          content: fields.Content || '',
           PostID: fields.PostID || '',
           GameThumbnail: gameThumbnail,
-          Badges: Array.isArray(fields.Badges) ? fields.Badges : [],
+          badges: Array.isArray(fields.Badges) ? fields.Badges : [],
           postType: fields.PostType || 'devlog',
           timelapseVideoId: fields.Timelapse || '',
           githubImageLink: fields['Link to Github Asset'] || '',
