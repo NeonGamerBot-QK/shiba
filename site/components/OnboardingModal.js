@@ -688,7 +688,7 @@ export default function OnboardingModal({ isOpen, token, onCompleted, playSound,
                 Login with Slack
               </button>
               
-              {/* <button
+              <button
                 onClick={() => {
                   playSound?.("next.mp3");
                   setOnboardingStage(4); // Skip to the next stage (Godot download)
@@ -713,9 +713,7 @@ export default function OnboardingModal({ isOpen, token, onCompleted, playSound,
                 }}
               >
                 Skip for now
-              </button> */}
-              
-
+              </button>
             </div>
           </div>
         )}
