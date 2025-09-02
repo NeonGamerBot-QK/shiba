@@ -9,6 +9,7 @@ const AIRTABLE_BASE_ID = 'appg245A41MWc6Rej';
 const AIRTABLE_USERS_TABLE = 'Users';
 const AIRTABLE_OTP_TABLE = 'OTP';
 const AIRTABLE_REFERRALS_TABLE = 'Referrals';
+const AIRTABLE_EMAIL_LOG_TABLE = 'EmailLog';
 const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 const LOOPS_TRANSACTIONAL_KEY = process.env.LOOPS_TRANSACTIONAL_KEY;
 const LOOPS_TRANSACTIONAL_TEMPLATE_ID = process.env.LOOPS_TRANSACTIONAL_TEMPLATE_ID;
@@ -30,6 +31,16 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Server configuration error' });
   }
 
+  const normalizedEmail = normalizeEmail(email);
+  
+  // Log email first to prevent data loss
+  try {
+    await logEmail(normalizedEmail);
+  } catch (error) {
+    console.error('Failed to log email:', error);
+    // Continue with login process even if logging fails
+  }
+
   // Initialize referral codes (only once per request)
   try {
     const existingCodes = await getAllExistingReferralCodes();
@@ -38,8 +49,6 @@ export default async function handler(req, res) {
     console.error('Failed to initialize referral codes:', error);
   }
 
-  const normalizedEmail = normalizeEmail(email);
-  
   // Rate limiting by email address
   const rateLimitKey = `login:${normalizedEmail}`;
   if (!checkRateLimit(rateLimitKey, 5, 60000)) { // 5 requests per minute
@@ -367,6 +376,22 @@ async function createReferralRecord(referredPersonId, referralCode, email) {
     console.error('Failed to create referral record:', error);
     throw error;
   }
+}
+
+async function logEmail(email) {
+  const payload = {
+    records: [
+      {
+        fields: {
+          Email: email,
+        },
+      },
+    ],
+  };
+  await airtableRequest(encodeURIComponent(AIRTABLE_EMAIL_LOG_TABLE), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 

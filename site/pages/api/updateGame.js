@@ -24,6 +24,7 @@ export default async function handler(req, res) {
     thumbnailUrl,
     thumbnailUpload,
     GitHubURL,
+    ShowreelLink,
     HackatimeProjects,
   } = req.body || {};
   if (!token || !gameId) {
@@ -80,6 +81,17 @@ export default async function handler(req, res) {
           fields.GitHubURL = t;
         } else {
           return res.status(400).json({ message: "Invalid GitHub URL" });
+        }
+      }
+    }
+
+    if (typeof ShowreelLink === "string") {
+      const t = ShowreelLink.trim();
+      if (t.length > 0) {
+        if (isValidUrl(t, ["https:"], ["youtube.com", "youtu.be"])) {
+          fields.ShowreelLink = t;
+        } else {
+          return res.status(400).json({ message: "Invalid Showreel URL. Please use a valid YouTube URL." });
         }
       }
     }
@@ -212,6 +224,7 @@ export default async function handler(req, res) {
           ? latest.fields.Thumbnail[0].url
           : "",
       GitHubURL: latest.fields?.GitHubURL || latest.fields?.GithubURL || "",
+      ShowreelLink: latest.fields?.ShowreelLink || "",
       HackatimeProjects: Array.isArray(latest.fields?.["Hackatime Projects"])
         ? latest.fields["Hackatime Projects"].filter(Boolean).join(", ")
         : typeof latest.fields?.["Hackatime Projects"] === "string"

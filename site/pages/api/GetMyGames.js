@@ -37,6 +37,7 @@ export default async function handler(req, res) {
           description: rec.fields?.Description || '',
           thumbnailUrl: Array.isArray(rec.fields?.Thumbnail) && rec.fields.Thumbnail[0]?.url ? rec.fields.Thumbnail[0].url : '',
           GitHubURL: rec.fields?.GitHubURL || rec.fields?.GithubURL || '',
+          ShowreelLink: rec.fields?.ShowreelLink || '',
           HackatimeProjects: Array.isArray(rec.fields?.['Hackatime Projects'])
             ? rec.fields['Hackatime Projects'].filter(Boolean).join(', ')
             : (typeof rec.fields?.['Hackatime Projects'] === 'string' ? rec.fields['Hackatime Projects'] : ''),

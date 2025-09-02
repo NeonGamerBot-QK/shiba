@@ -176,6 +176,7 @@ export default function MyGamesComponent({
           description: g.description ?? g.Description ?? "",
           thumbnailUrl: g.thumbnailUrl ?? "",
           GitHubURL: g.GitHubURL ?? "",
+          ShowreelLink: g.ShowreelLink ?? "",
           HackatimeProjects: g.HackatimeProjects ?? "",
           AveragePlaytestSeconds: g.AveragePlaytestSeconds ?? 0,
           AverageFunScore: g.AverageFunScore ?? 0,
@@ -321,6 +322,7 @@ export default function MyGamesComponent({
           description: g.description ?? g.Description ?? "",
           thumbnailUrl: g.thumbnailUrl ?? "",
           GitHubURL: g.GitHubURL ?? "",
+          ShowreelLink: g.ShowreelLink ?? "",
           HackatimeProjects: g.HackatimeProjects ?? "",
           AveragePlaytestSeconds: g.AveragePlaytestSeconds ?? 0,
           AverageFunScore: g.AverageFunScore ?? 0,
@@ -635,6 +637,7 @@ function DetailView({
   const [thumbnailUrl, setThumbnailUrl] = useState(game?.thumbnailUrl || "");
   const [previewUrl, setPreviewUrl] = useState(game?.thumbnailUrl || "");
   const [GitHubURL, setGitHubURL] = useState(game?.GitHubURL || "");
+  const [ShowreelLink, setShowreelLink] = useState(game?.ShowreelLink || "");
   const [availableProjects, setAvailableProjects] = useState([]);
   const [projectsWithTime, setProjectsWithTime] = useState([]);
   const [selectedProjectsCsv, setSelectedProjectsCsv] = useState(
@@ -834,6 +837,7 @@ function DetailView({
     setThumbnailFile(null);
     setPreviewUrl(game?.thumbnailUrl || "");
     setGitHubURL(game?.GitHubURL || "");
+    setShowreelLink(game?.ShowreelLink || "");
     setSelectedProjectsCsv(game?.HackatimeProjects || "");
     setPostContent("");
     setPostMessage("");
@@ -964,16 +968,19 @@ function DetailView({
     const initialName = game?.name || "";
     const initialDescription = game?.description || "";
     const initialGitHub = game?.GitHubURL || "";
+    const initialShowreel = game?.ShowreelLink || "";
     const initialProjects = game?.HackatimeProjects || "";
     const nameChanged = (name || "") !== initialName;
     const descriptionChanged = (description || "") !== initialDescription;
     const gitChanged = (GitHubURL || "") !== initialGitHub;
+    const showreelChanged = (ShowreelLink || "") !== initialShowreel;
     const projectsChanged = (selectedProjectsCsv || "") !== initialProjects;
     const thumbnailChanged = Boolean(thumbnailFile);
     return (
       nameChanged ||
       descriptionChanged ||
       gitChanged ||
+      showreelChanged ||
       projectsChanged ||
       thumbnailChanged
     );
@@ -981,10 +988,12 @@ function DetailView({
     game?.name,
     game?.description,
     game?.GitHubURL,
+    game?.ShowreelLink,
     game?.HackatimeProjects,
     name,
     description,
     GitHubURL,
+    ShowreelLink,
     selectedProjectsCsv,
     thumbnailFile,
   ]);
@@ -1049,6 +1058,7 @@ function DetailView({
           thumbnailUrl: uploadedUrl,
           thumbnailUpload,
           GitHubURL,
+          ShowreelLink,
           HackatimeProjects: selectedProjectsCsv,
         }),
       });
@@ -1060,6 +1070,7 @@ function DetailView({
           description: data.game.description,
           thumbnailUrl: data.game.thumbnailUrl || uploadedUrl || "",
           GitHubURL: data.game.GitHubURL || GitHubURL || "",
+          ShowreelLink: data.game.ShowreelLink || ShowreelLink || "",
           HackatimeProjects:
             data.game.HackatimeProjects || selectedProjectsCsv || "",
         };
@@ -1070,6 +1081,7 @@ function DetailView({
         setThumbnailFile(null);
         setThumbnailUrl(updated.thumbnailUrl);
         setGitHubURL(updated.GitHubURL);
+        setShowreelLink(updated.ShowreelLink);
         setSelectedProjectsCsv(updated.HackatimeProjects);
       }
     } catch (e) {
@@ -1219,9 +1231,8 @@ function DetailView({
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             gap: 12,
-            alignItems: "flex-start",
           }}
         >
           <input
@@ -1237,8 +1248,45 @@ function DetailView({
                 alert("Please use format: https://github.com/{user}/{project}");
               }
             }}
-            style={{ flex: 1 }}
           />
+          <input
+            className="nice-input"
+            type="text"
+            value={ShowreelLink}
+            onChange={(e) => setShowreelLink(e.target.value)}
+            placeholder="Showreel Link (YouTube demo of your game)"
+          />
+          <div
+            style={{
+              fontSize: 12,
+              color: "#000",
+              opacity: 0.7,
+              lineHeight: 1.4,
+            }}
+          >
+            YouTube link demoing your game, see some examples{" "}
+            <a
+              href="https://youtu.be/UAS_pUTFA7o?si=Xa607uc0GmadrCgm"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#ff6fa5",
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              here
+            </a>
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
           {/* Hackatime projects input with inline dropdown multi-select */}
           <div ref={projectPickerContainerRef} style={{ position: 'relative', flex: 1 }}>
                           <input
