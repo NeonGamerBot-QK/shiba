@@ -19,6 +19,11 @@ export default async function handler(req, res) {
   }
   
   console.log('[GetMyGames] API Key present, proceeding...');
+  console.log('[GetMyGames] Table names:', {
+    USERS: AIRTABLE_USERS_TABLE,
+    GAMES: AIRTABLE_GAMES_TABLE,
+    POSTS: AIRTABLE_POSTS_TABLE
+  });
 
   try {
     const { token } = req.body || {};
@@ -27,8 +32,28 @@ export default async function handler(req, res) {
     console.log(`[GetMyGames] Fetching games for token: ${token}`);
     const gameRecords = await fetchAllGamesForOwner(token);
     console.log(`[GetMyGames] Raw game records:`, gameRecords);
+    console.log(`[GetMyGames] Number of games found: ${gameRecords?.length || 0}`);
+    
+    if (!gameRecords || gameRecords.length === 0) {
+      console.log(`[GetMyGames] No games found, returning empty array`);
+      return res.status(200).json([]);
+    }
     // Fetch all posts for this owner in one request - much faster!
+    console.log(`[GetMyGames] About to fetch posts using table: ${AIRTABLE_POSTS_TABLE}`);
     const allPosts = await fetchAllPostsForOwner(token, gameRecords);
+    console.log(`[GetMyGames] Total posts fetched: ${allPosts.length}`);
+    if (allPosts.length > 0) {
+      console.log(`[GetMyGames] Sample post structure:`, {
+        id: allPosts[0].id,
+        gameField: allPosts[0].fields?.Game,
+        gameFieldType: typeof allPosts[0].fields?.Game,
+        isArray: Array.isArray(allPosts[0].fields?.Game),
+        gameNameField: allPosts[0].fields?.['Game Name'],
+        allFields: Object.keys(allPosts[0].fields || {})
+      });
+    } else {
+      console.log(`[GetMyGames] No posts found - this might indicate an issue with the posts query`);
+    }
     
     const games = gameRecords.map((rec) => {
       const gameId = rec.id;
@@ -36,9 +61,19 @@ export default async function handler(req, res) {
       
       // Filter posts for this specific game from the pre-fetched posts
       const posts = allPosts.filter(post => {
-        const postGameNames = Array.isArray(post.fields?.Game) ? post.fields.Game : [];
-        return postGameNames.includes(gameName);
+        // Use the Game Name field which contains the actual game names
+        const postGameName = post.fields?.['Game Name'];
+        if (Array.isArray(postGameName)) {
+          // If Game Name is an array, check if it contains the game name
+          return postGameName.some(game => game === gameName);
+        } else if (typeof postGameName === 'string') {
+          // If Game Name is a string, check if it matches
+          return postGameName === gameName;
+        }
+        return false;
       });
+      
+      console.log(`[GetMyGames] Game "${gameName}" has ${posts.length} posts`);
       
       return {
         id: gameId,
@@ -146,8 +181,8 @@ async function fetchAllGamesForOwner(ownerToken) {
 }
 
 async function fetchAllPostsForOwner(ownerToken, gameRecords) {
-  // Fetch all posts for this owner in batches of 100 - much more scalable
-  console.log(`[GetMyGames] Fetching all posts for owner token: ${ownerToken}`);
+  // Fetch all posts for this owner using ownerToken - much simpler!
+  console.log(`[GetMyGames] Fetching posts for owner token: ${ownerToken}`);
   
   try {
     let allPosts = [];
@@ -167,8 +202,8 @@ async function fetchAllPostsForOwner(ownerToken, gameRecords) {
       
       const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
       const page = await airtableRequest(url, { method: 'GET' });
-      const records = Array.isArray(page?.records) ? page.records : [];
       
+      const records = Array.isArray(page?.records) ? page.records : [];
       allPosts = allPosts.concat(records);
       offset = page.offset; // Get next page offset
       
