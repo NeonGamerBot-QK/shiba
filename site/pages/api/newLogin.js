@@ -43,23 +43,25 @@ export default async function handler(req, res) {
     const otp = generateSixDigitCode();
     const token = generateAlphanumericToken(120);
     
-    // Do everything in parallel: user lookup, OTP creation, and email sending
-    console.log(`[${new Date().toISOString()}] newLogin: Starting parallel operations`);
+    // Find or create user first
+    console.log(`[${new Date().toISOString()}] newLogin: Finding/creating user`);
+    const userRecord = await findOrCreateUser(normalizedEmail);
     
-    const [userRecord, otpCreated, emailSent] = await Promise.all([
-      // 1. Find or create user
-      findOrCreateUser(normalizedEmail),
-      // 2. Create OTP record
+    // Use parallel operations for write operations
+    console.log(`[${new Date().toISOString()}] newLogin: Starting parallel write operations`);
+    
+    // Do OTP creation and token update in parallel
+    const [otpCreated, tokenUpdated] = await Promise.all([
       createOtpRecord(normalizedEmail, otp, token),
-      // 3. Send email (don't wait for this to complete)
-      sendOtpEmailViaLoops(normalizedEmail, otp).catch(err => {
-        console.error('Email send failed:', err);
-        return false;
-      })
+      updateUserToken(userRecord.id, token)
     ]);
-
-    // Update user token
-    await updateUserToken(userRecord.id, token);
+    
+    console.log(`[${new Date().toISOString()}] newLogin: Write operations completed`);
+    
+    // Send email (non-blocking)
+    sendOtpEmailViaLoops(normalizedEmail, otp).catch(err => {
+      console.error('Email send failed:', err);
+    });
     
     const totalTime = Date.now() - startTime;
     console.log(`[${new Date().toISOString()}] newLogin: Completed in ${totalTime}ms`);
@@ -169,6 +171,41 @@ async function airtableRequest(path, options = {}) {
   }
   
   return response.json();
+}
+
+async function airtableBatchRequest(operations) {
+  // Airtable batch endpoint for multiple operations
+  const url = `${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}`;
+  
+  const payload = {
+    requests: operations.map(op => ({
+      method: op.method,
+      path: op.path,
+      body: op.body
+    }))
+  };
+  
+  console.log(`[${new Date().toISOString()}] airtableBatchRequest: URL: ${url}`);
+  console.log(`[${new Date().toISOString()}] airtableBatchRequest: Payload:`, JSON.stringify(payload, null, 2));
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    console.error(`[${new Date().toISOString()}] airtableBatchRequest: Failed with status ${response.status}: ${text}`);
+    throw new Error(`Airtable batch error ${response.status}: ${text}`);
+  }
+  
+  const result = await response.json();
+  console.log(`[${new Date().toISOString()}] airtableBatchRequest: Success:`, JSON.stringify(result, null, 2));
+  return result;
 }
 
 async function sendOtpEmailViaLoops(email, otp) {

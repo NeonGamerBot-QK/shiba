@@ -32,26 +32,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get most recent OTP for this email within last 5 minutes
-    const minutesWindow = 5;
-    const recentOtp = await getMostRecentOtpForEmail(normalizedEmail, minutesWindow);
+    // Simplified OTP lookup - just get the most recent one for this email
+    const recentOtp = await getMostRecentOtpForEmail(normalizedEmail);
     if (!recentOtp) {
       return res.status(400).json({ message: 'Invalid or expired code.' });
     }
 
     const recentCode = String(recentOtp.fields?.OTP || '');
-    // Extra server-side guard in case table lacks filter support
-    if (recentOtp.createdTime) {
-      const createdMs = new Date(recentOtp.createdTime).getTime();
-      if (Number.isFinite(createdMs)) {
-        const ageMs = Date.now() - createdMs;
-        if (ageMs > minutesWindow * 60 * 1000) {
-          return res.status(400).json({ message: 'Invalid or expired code.' });
-        }
-      }
-    }
     if (recentCode !== String(otp)) {
       return res.status(400).json({ message: 'Invalid code.' });
+    }
+
+    // Check if OTP is expired (simplified check)
+    if (recentOtp.createdTime) {
+      const createdMs = new Date(recentOtp.createdTime).getTime();
+      const ageMs = Date.now() - createdMs;
+      if (ageMs > 5 * 60 * 1000) { // 5 minutes
+        return res.status(400).json({ message: 'Code expired.' });
+      }
     }
 
     // Fetch user and return current token
@@ -59,6 +57,7 @@ export default async function handler(req, res) {
     if (!userRecord) {
       return res.status(400).json({ message: 'User not found.' });
     }
+    
     const token = String(userRecord.fields?.token || '');
     if (!token) {
       return res.status(400).json({ message: 'No active token for user.' });
@@ -66,7 +65,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ token });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('tryOTP error:', error);
     return res.status(500).json({ message: 'An unexpected error occurred.' });
   }
@@ -111,11 +109,12 @@ async function findUserByEmail(email) {
   return record || null;
 }
 
-async function getMostRecentOtpForEmail(email, minutesWindow = 5) {
+async function getMostRecentOtpForEmail(email) {
   // SECURITY FIX: Escape the email to prevent formula injection
   const emailEscaped = safeEscapeFormulaString(email);
   const params = new URLSearchParams();
-  params.set('filterByFormula', `AND({Email} = "${emailEscaped}", IS_AFTER(CREATED_TIME(), DATEADD(NOW(), -${minutesWindow}, 'minutes')))`);
+  // Simplified filter - just get the most recent OTP for this email
+  params.set('filterByFormula', `{Email} = "${emailEscaped}"`);
   params.set('pageSize', '1');
   params.set('sort[0][field]', 'Created At');
   params.set('sort[0][direction]', 'desc');
