@@ -1524,8 +1524,8 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEventsOpen, setIsEventsOpen] = useState(false);
   const [hasOpenedEventsNotification, setHasOpenedEventsNotification] = useState(false);
-  const [hasOnboarded, setHasOnboarded] = useState(true);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true);
   const [openMatchaModal, setOpenMatchaModal] = useState(false);
   const [isSSSExplainerOpen, setIsSSSExplainerOpen] = useState(false);
 
@@ -1615,6 +1615,11 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   // Check onboarding status and trigger MatchaModal when profile is loaded
   useEffect(() => {
     if (profile) {
+      // Force onboarding to always show for now
+      setHasOnboarded(false);
+      setIsOnboardingOpen(true);
+      setOpenMatchaModal(false); // Don't show MatchaModal if not onboarded
+      
       if (profile.hasOnboarded === false) {
         setHasOnboarded(false);
         setIsOnboardingOpen(true);
@@ -1649,6 +1654,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
           setOpenMatchaModal(false);
         }
       }
+      
     }
   }, [profile, token]);
 
