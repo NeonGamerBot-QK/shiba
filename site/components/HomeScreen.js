@@ -1525,7 +1525,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   const [isEventsOpen, setIsEventsOpen] = useState(false);
   const [hasOpenedEventsNotification, setHasOpenedEventsNotification] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [openMatchaModal, setOpenMatchaModal] = useState(false);
   const [isSSSExplainerOpen, setIsSSSExplainerOpen] = useState(false);
 
@@ -1615,17 +1615,11 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   // Check onboarding status and trigger MatchaModal when profile is loaded
   useEffect(() => {
     if (profile) {
-      // Force onboarding to always show for now
-      setHasOnboarded(false);
-      setIsOnboardingOpen(true);
-      setOpenMatchaModal(false); // Don't show MatchaModal if not onboarded
-      
-      if (profile.hasOnboarded === false) {
-        setHasOnboarded(false);
-        setIsOnboardingOpen(true);
-        setOpenMatchaModal(false); // Don't show MatchaModal if not onboarded
-      } else {
+      // Check if user has onboarded
+      if (profile.hasOnboarded === true) {
         setHasOnboarded(true);
+        setIsOnboardingOpen(false);
+        
         // Check if user has any Hackatime projects connected by fetching their games
         if (token && SlackId && SlackId.trim() !== '') {
           fetch('/api/GetMyGames', {
@@ -1653,8 +1647,12 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
           // Don't show modal if no SlackId (user needs to connect Slack first)
           setOpenMatchaModal(false);
         }
+      } else {
+        // User hasn't onboarded
+        setHasOnboarded(false);
+        setIsOnboardingOpen(true);
+        setOpenMatchaModal(false); // Don't show MatchaModal if not onboarded
       }
-      
     }
   }, [profile, token]);
 

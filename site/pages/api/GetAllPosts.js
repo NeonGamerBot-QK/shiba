@@ -21,17 +21,15 @@ export default async function handler(req, res) {
     const limitParam = Number.parseInt(String(req.query?.limit || '100'), 10);
     const hardLimit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 1000) : 100;
 
-    // 1) Fetch posts (paginated) up to limit, newest first by "Created At"
-    const allPosts = await fetchAllAirtableRecords(AIRTABLE_POSTS_TABLE, {
-      sort: [{ field: 'Created At', direction: 'desc' }],
-      limit: hardLimit,
+    // 1) Fetch posts with games (filtered server-side) up to limit, newest first
+    const params = new URLSearchParams({
+      filterByFormula: 'LEN(ARRAYJOIN({Game})) > 0',
+      sort: '[{"field":"Created At","direction":"desc"}]',
+      pageSize: hardLimit.toString(),
     });
-
-    // 2) Filter out posts that have no game tied to them
-    const postsWithGames = allPosts.filter((rec) => {
-      const linkedGameIds = normalizeLinkedIds(rec?.fields?.Game);
-      return linkedGameIds.length > 0 && linkedGameIds[0];
-    });
+    
+    const allPosts = await airtableRequest(`${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`);
+    const postsWithGames = allPosts.records || [];
 
     // 3) Collect linked Game IDs
     const gameIdsSet = new Set();

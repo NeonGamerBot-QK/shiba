@@ -69,16 +69,16 @@ export default async function handler(req, res) {
 async function fetchPostsForGame(gameId) {
   console.log('[GetPostsForGame] fetchPostsForGame gameId:', gameId);
   
-  // Fetch all posts and filter by game ID
-  const allPosts = await fetchAllAirtableRecords(AIRTABLE_POSTS_TABLE, {
-    sort: [{ field: 'Created At', direction: 'desc' }],
+  // Use Airtable's built-in filtering instead of fetching everything
+  const params = new URLSearchParams({
+    filterByFormula: `SEARCH("${safeEscapeFormulaString(gameId)}", ARRAYJOIN({Game}))`,
+    sort: '[{"field":"Created At","direction":"desc"}]',
+    pageSize: '100',
   });
-
-  // Filter posts that are linked to the specific game
-  const postsForGame = allPosts.filter((rec) => {
-    const linkedGameIds = normalizeLinkedIds(rec?.fields?.Game);
-    return linkedGameIds.includes(gameId);
-  });
+  
+  const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
+  const page = await airtableRequest(url, { method: 'GET' });
+  const postsForGame = Array.isArray(page?.records) ? page.records : [];
 
   console.log(`[GetPostsForGame] found ${postsForGame.length} posts for game ${gameId}`);
 

@@ -14,46 +14,54 @@ export default async function handler(req, res) {
   }
 
   if (!AIRTABLE_API_KEY) {
+    console.error('[GetMyGames] Missing AIRTABLE_API_KEY');
     return res.status(500).json({ message: 'Server configuration error' });
   }
+  
+  console.log('[GetMyGames] API Key present, proceeding...');
 
   try {
     const { token } = req.body || {};
     if (!token) return res.status(200).json([]);
 
-    const userRecord = await findUserByToken(token);
-    if (!userRecord) return res.status(200).json([]);
-
-    const gameRecords = await fetchAllGamesForOwner(userRecord.id);
-    const games = await Promise.all(
-      gameRecords.map(async (rec) => {
-        const gameId = rec.id;
-        // eslint-disable-next-line no-console
-        console.log('[GetMyGames] Fetching posts for gameId:', gameId);
-        const posts = await fetchPostsForGame(gameId);
-        return {
-          id: gameId,
-          name: rec.fields?.Name || '',
-          description: rec.fields?.Description || '',
-          thumbnailUrl: Array.isArray(rec.fields?.Thumbnail) && rec.fields.Thumbnail[0]?.url ? rec.fields.Thumbnail[0].url : '',
-          GitHubURL: rec.fields?.GitHubURL || rec.fields?.GithubURL || '',
-          ShowreelLink: rec.fields?.ShowreelLink || '',
-          HackatimeProjects: Array.isArray(rec.fields?.['Hackatime Projects'])
-            ? rec.fields['Hackatime Projects'].filter(Boolean).join(', ')
-            : (typeof rec.fields?.['Hackatime Projects'] === 'string' ? rec.fields['Hackatime Projects'] : ''),
-          HoursSpent: rec.fields?.HoursSpent || 0,
-          AveragePlaytestSeconds: rec.fields?.AveragePlaytestSeconds || 0,
-          AverageFunScore: rec.fields?.AverageFunScore || 0,
-          AverageArtScore: rec.fields?.AverageArtScore || 0,
-          AverageCreativityScore: rec.fields?.AverageCreativityScore || 0,
-          AverageAudioScore: rec.fields?.AverageAudioScore || 0,
-          AverageMoodScore: rec.fields?.AverageMoodScore || 0,
-          numberComplete: rec.fields?.numberComplete || 0,
-          Feedback: rec.fields?.Feedback || '',
-          posts,
-        };
-      })
-    );
+    console.log(`[GetMyGames] Fetching games for token: ${token}`);
+    const gameRecords = await fetchAllGamesForOwner(token);
+    console.log(`[GetMyGames] Raw game records:`, gameRecords);
+    // Fetch all posts for this owner in one request - much faster!
+    const allPosts = await fetchAllPostsForOwner(token, gameRecords);
+    
+    const games = gameRecords.map((rec) => {
+      const gameId = rec.id;
+      const gameName = rec.fields?.Name || '';
+      
+      // Filter posts for this specific game from the pre-fetched posts
+      const posts = allPosts.filter(post => {
+        const postGameNames = Array.isArray(post.fields?.Game) ? post.fields.Game : [];
+        return postGameNames.includes(gameName);
+      });
+      
+      return {
+        id: gameId,
+        name: gameName,
+        description: rec.fields?.Description || '',
+        thumbnailUrl: Array.isArray(rec.fields?.Thumbnail) && rec.fields.Thumbnail[0]?.url ? rec.fields.Thumbnail[0].url : '',
+        GitHubURL: rec.fields?.GitHubURL || rec.fields?.GithubURL || '',
+        ShowreelLink: rec.fields?.ShowreelLink || '',
+        HackatimeProjects: Array.isArray(rec.fields?.['Hackatime Projects'])
+          ? rec.fields['Hackatime Projects'].filter(Boolean).join(', ')
+          : (typeof rec.fields?.['Hackatime Projects'] === 'string' ? rec.fields['Hackatime Projects'] : ''),
+        HoursSpent: rec.fields?.HoursSpent || 0,
+        AveragePlaytestSeconds: rec.fields?.AveragePlaytestSeconds || 0,
+        AverageFunScore: rec.fields?.AverageFunScore || 0,
+        AverageArtScore: rec.fields?.AverageArtScore || 0,
+        AverageCreativityScore: rec.fields?.AverageCreativityScore || 0,
+        AverageAudioScore: rec.fields?.AverageAudioScore || 0,
+        AverageMoodScore: rec.fields?.AverageMoodScore || 0,
+        numberComplete: rec.fields?.numberComplete || 0,
+        Feedback: rec.fields?.Feedback || '',
+        posts,
+      };
+    });
 
     return res.status(200).json(games);
   } catch (error) {
@@ -107,139 +115,74 @@ function normalizeLinkedIds(value) {
   return [];
 }
 
-async function fetchAllGamesForOwner(ownerRecordId) {
-  let allRecords = [];
-  let offset;
-  do {
-    const params = new URLSearchParams();
-    params.set('pageSize', '100');
-    if (offset) params.set('offset', offset);
-
-    const page = await airtableRequest(`${encodeURIComponent(AIRTABLE_GAMES_TABLE)}?${params.toString()}`, {
-      method: 'GET',
-    });
-    const pageRecords = (page?.records || []).filter((rec) => {
-      const ownerIds = normalizeLinkedIds(rec.fields?.Owner);
-      return ownerIds.includes(ownerRecordId);
-    });
-    allRecords = allRecords.concat(pageRecords);
-    offset = page?.offset;
-  } while (offset);
-  return allRecords;
-}
-
-async function fetchPostsForGame(gameId) {
-  // eslint-disable-next-line no-console
-  console.log('[GetMyGames] fetchPostsForGame gameId:', gameId);
-  // First, try filtering server-side for performance and correctness
-  const tryServerFilter = async () => {
-    const params = new URLSearchParams();
-    params.set('pageSize', '100');
-    params.set('filterByFormula', `ARRAYJOIN({Game}) = "${safeEscapeFormulaString(gameId)}"`);
-    params.set('sort[0][field]', 'Created At');
-    params.set('sort[0][direction]', 'desc');
-    const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
-    const page = await airtableRequest(url, { method: 'GET' });
-    const records = Array.isArray(page?.records) ? page.records : [];
-    // eslint-disable-next-line no-console
-    console.log(`[GetMyGames] server filter posts count for ${gameId}:`, records.length);
-    return records;
-  };
-
-  let records = await tryServerFilter();
-  if (!records || records.length === 0) {
-    // Fallback: fetch pages and filter in code
-    let allRecords = [];
-    let offset;
-    do {
-      const params = new URLSearchParams();
-      params.set('pageSize', '100');
-      if (offset) params.set('offset', offset);
-      const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
-      const page = await airtableRequest(url, { method: 'GET' });
-      const pageRecords = (page?.records || []).filter((rec) => Array.isArray(rec.fields?.Game) && rec.fields.Game.includes(gameId));
-      allRecords = allRecords.concat(pageRecords);
-      offset = page?.offset;
-    } while (offset);
-    // eslint-disable-next-line no-console
-    console.log(`[GetMyGames] fallback client-filter posts count for ${gameId}:`, allRecords.length);
-    records = allRecords;
-  }
-
-  // Sort newest first using "Created At" (fallback to createdTime)
-  records.sort((a, b) => {
-    const ad = new Date(a?.fields?.['Created At'] || a?.createdTime || 0).getTime();
-    const bd = new Date(b?.fields?.['Created At'] || b?.createdTime || 0).getTime();
-    return bd - ad;
+async function fetchAllGamesForOwner(ownerToken) {
+  // First, let's see what games exist and what the ownerToken field looks like
+  console.log(`[GetMyGames] Attempting to find games for token: ${ownerToken}`);
+  
+  // Try the direct filter first
+  const params = new URLSearchParams({
+    filterByFormula: `{ownerToken} = "${ownerToken}"`,
+    pageSize: '100',
   });
 
-  return records.map((rec) => ({
-    id: rec.id,
-    postId: rec.fields?.PostID || '',
-    content: rec.fields?.Content || '',
-    createdAt: rec.fields?.['Created At'] || rec.createdTime || '',
-    PlayLink: typeof rec.fields?.PlayLink === 'string' ? rec.fields.PlayLink : '',
-    attachments: (() => {
-      const airtableAttachments = Array.isArray(rec.fields?.Attachements)
-        ? rec.fields.Attachements.map((a) => ({
-            url: a?.url,
-            type: a?.type,
-            filename: a?.filename,
-            id: a?.id,
-            size: a?.size,
-          })).filter((a) => a.url)
-        : [];
+  console.log(`[GetMyGames] Airtable query params:`, params.toString());
+  
+  const data = await airtableRequest(`${encodeURIComponent(AIRTABLE_GAMES_TABLE)}?${params.toString()}`, {
+    method: 'GET',
+  });
+  
+  console.log(`[GetMyGames] Airtable response:`, data);
+  
+  if (data.records && data.records.length > 0) {
+    console.log(`[GetMyGames] Found ${data.records.length} games with direct filter`);
+    return data.records;
+  }
+  
+  // If no games found with direct filter, the token might not exist in any games
+  console.log(`[GetMyGames] No games found with direct filter for token: ${ownerToken}`);
+  console.log(`[GetMyGames] This token might not be associated with any games yet`);
+  
+  return [];
+}
+
+async function fetchAllPostsForOwner(ownerToken, gameRecords) {
+  // Fetch all posts for this owner in batches of 100 - much more scalable
+  console.log(`[GetMyGames] Fetching all posts for owner token: ${ownerToken}`);
+  
+  try {
+    let allPosts = [];
+    let offset = null;
+    
+    do {
+      const params = new URLSearchParams({
+        filterByFormula: `{ownerToken} = "${ownerToken}"`,
+        pageSize: '100',
+      });
       
-      // Add S3 attachment links
-      const attachmentLinks = rec.fields?.AttachementLinks || '';
-      const s3Attachments = attachmentLinks
-        ? attachmentLinks.split(',').map(link => link.trim()).filter(link => link).map(url => {
-            const filename = url.split('/').pop() || 'attachment';
-            let ext = '';
-            
-            // Try to get extension from filename first
-            if (filename.includes('.')) {
-              ext = filename.split('.').pop().toLowerCase();
-            } 
-            // If no extension in filename, try to get it from the URL path
-            else {
-              const urlPath = new URL(url).pathname;
-              const pathParts = urlPath.split('.');
-              if (pathParts.length > 1) {
-                ext = pathParts[pathParts.length - 1].toLowerCase();
-              }
-            }
-            
-            // Determine content type from file extension
-            let contentType = 'application/octet-stream';
-            if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
-              contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-            } else if (['mp4', 'webm', 'mov', 'm4v', 'avi', 'mkv', 'mpg', 'mpeg'].includes(ext)) {
-              contentType = `video/${ext}`;
-            } else if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)) {
-              contentType = `audio/${ext}`;
-            }
-            
-            return {
-              url: url,
-              type: contentType,
-              filename: filename.includes('.') ? filename : `attachment.${ext}`,
-              id: `s3-${Date.now()}`,
-              size: 0
-            };
-          })
-        : [];
+      if (offset) {
+        params.set('offset', offset);
+      }
       
-      return [...airtableAttachments, ...s3Attachments];
-    })(),
-    badges: Array.isArray(rec.fields?.Badges) ? rec.fields.Badges : [],
-    postType: rec.fields?.PostType || 'devlog',
-    timelapseVideoId: rec.fields?.Timelapse || '',
-    githubImageLink: rec.fields?.['Link to Github Asset'] || '',
-    timeScreenshotId: rec.fields?.TimeScreenshotFile || '',
-    hoursSpent: rec.fields?.HoursSpent || 0,
-    minutesSpent: 0,
-  }));
+      console.log(`[GetMyGames] Fetching posts batch, offset: ${offset || 'none'}`);
+      
+      const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
+      const page = await airtableRequest(url, { method: 'GET' });
+      const records = Array.isArray(page?.records) ? page.records : [];
+      
+      allPosts = allPosts.concat(records);
+      offset = page.offset; // Get next page offset
+      
+      console.log(`[GetMyGames] Fetched ${records.length} posts in this batch, total so far: ${allPosts.length}`);
+      
+    } while (offset); // Continue until no more pages
+    
+    console.log(`[GetMyGames] Found ${allPosts.length} total posts for owner after pagination`);
+    return allPosts;
+    
+  } catch (error) {
+    console.error(`[GetMyGames] Failed to fetch posts for owner:`, error);
+    return [];
+  }
 }
 
 
