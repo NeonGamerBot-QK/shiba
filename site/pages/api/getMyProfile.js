@@ -22,22 +22,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Initialize used referral codes to ensure uniqueness
-    try {
-      const existingCodes = await getAllExistingReferralCodes();
-      initializeUsedCodes(existingCodes);
-      console.log(`Initialized ${existingCodes.length} existing referral codes for getMyProfile`);
-    } catch (error) {
-      console.error('Failed to initialize referral codes in getMyProfile:', error);
-      // Continue without initialization - will use fallback with number suffix if needed
-    }
+    // Skip expensive referral code initialization - assume uniqueness
 
     const user = await findUserByToken(token);
     if (!user) {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    // Ensure user has a referral code
+    // Ensure user has a referral code - assume uniqueness
     if (!user.fields?.ReferralCode || user.fields.ReferralCode.trim() === '') {
       console.log(`User ${user.id} doesn't have a referral code, generating one...`);
       try {
