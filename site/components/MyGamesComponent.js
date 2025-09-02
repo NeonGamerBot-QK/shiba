@@ -1235,6 +1235,9 @@ function DetailView({
             gap: 12,
           }}
         >
+          <div style={{ fontSize: 14, fontWeight: "bold", color: "#333" }}>
+            GitHub Repository
+          </div>
           <input
             className="nice-input"
             type="text"
@@ -1249,12 +1252,15 @@ function DetailView({
               }
             }}
           />
+          <div style={{ fontSize: 14, fontWeight: "bold", color: "#333" }}>
+            Showreel Demo
+          </div>
           <input
             className="nice-input"
             type="text"
             value={ShowreelLink}
             onChange={(e) => setShowreelLink(e.target.value)}
-            placeholder="Showreel Link (YouTube demo of your game)"
+            placeholder="Showreel Link"
           />
           <div
             style={{
@@ -1264,9 +1270,9 @@ function DetailView({
               lineHeight: 1.4,
             }}
           >
-            YouTube link demoing your game, see some examples{" "}
+            Please share a youtube link to a showreel of your game. Here are some examples:{" "}
             <a
-              href="https://youtu.be/UAS_pUTFA7o?si=Xa607uc0GmadrCgm"
+              href="https://youtu.be/UAS_pUTFA7o?si=8NSmFMgGsB8LiOGb"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -1275,7 +1281,7 @@ function DetailView({
                 textDecoration: "none",
               }}
             >
-              here
+              https://youtu.be/UAS_pUTFA7o?si=8NSmFMgGsB8LiOGb
             </a>
           </div>
         </div>
@@ -1289,7 +1295,10 @@ function DetailView({
         >
           {/* Hackatime projects input with inline dropdown multi-select */}
           <div ref={projectPickerContainerRef} style={{ position: 'relative', flex: 1 }}>
-                          <input
+            <div style={{ fontSize: 14, fontWeight: "bold", color: "#333", marginBottom: 8 }}>
+              Hackatime Projects
+            </div>
+            <input
                 className="nice-input"
                 type="text"
                 value={selectedProjectsCsv}
