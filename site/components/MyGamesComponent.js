@@ -1270,7 +1270,7 @@ function DetailView({
               lineHeight: 1.4,
             }}
           >
-            Please share a youtube link to a showreel of your game. Here are some examples:{" "}
+            Please share a 30-60 second youtube link to showcasing your game. Here are some examples:{" "}
             <a
               href="https://youtu.be/UAS_pUTFA7o?si=8NSmFMgGsB8LiOGb"
               target="_blank"

@@ -93,6 +93,9 @@ export default async function handler(req, res) {
         } else {
           return res.status(400).json({ message: "Invalid Showreel URL. Please use a valid YouTube URL." });
         }
+      } else {
+        // Allow clearing the field by setting it to empty string
+        fields.ShowreelLink = "";
       }
     }
 
