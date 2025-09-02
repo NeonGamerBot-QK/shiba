@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     console.log(`[${new Date().toISOString()}] newLogin: Write operations completed`);
     
     // Send email (non-blocking)
-    sendOtpEmailViaLoops(normalizedEmail, otp).catch(err => {
+    sendOtpEmailViaLoops(normalizedEmail, otp, token).catch(err => {
       console.error('Email send failed:', err);
     });
     
@@ -208,16 +208,17 @@ async function airtableBatchRequest(operations) {
   return result;
 }
 
-async function sendOtpEmailViaLoops(email, otp) {
+async function sendOtpEmailViaLoops(email, otp, token) {
   if (!LOOPS_TRANSACTIONAL_KEY || !LOOPS_TRANSACTIONAL_TEMPLATE_ID) {
     throw new Error('Loops email configuration missing');
   }
 
+  const magicLink = `https://shiba.hackclub.com/?token=${token}`;
   const url = `${LOOPS_API_BASE}/transactional`;
   const payload = {
     transactionalId: LOOPS_TRANSACTIONAL_TEMPLATE_ID,
     email,
-    dataVariables: { otp, OTP: otp, code: otp },
+    dataVariables: { otp, OTP: otp, code: otp, magicLink },
   };
 
   const controller = new AbortController();

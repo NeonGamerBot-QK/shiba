@@ -65,10 +65,22 @@ export default function Home() {
     setAppOpen("Home");
   };
 
-  // Handle URL query parameters
+  // Handle URL token parameter - only once on mount
+  useEffect(() => {
+    if (router.isReady) {
+      const { token: urlToken } = router.query;
+      if (urlToken) {
+        localStorage.setItem("token", urlToken);
+        setToken(urlToken);
+      }
+    }
+  }, [router.isReady]); // Only run when router becomes ready
+
+  // Handle other URL query parameters
   useEffect(() => {
     if (router.isReady) {
       const { openProfile } = router.query;
+      
       if (openProfile === "true") {
         setAutoOpenProfile(true);
         // Clean up the URL without triggering a page reload
