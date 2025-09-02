@@ -51,6 +51,8 @@ export default async function handler(req, res) {
         gameNameField: allPosts[0].fields?.['Game Name'],
         contentField: allPosts[0].fields?.Content,
         contentFieldType: typeof allPosts[0].fields?.Content,
+        hoursSpentField: allPosts[0].fields?.HoursSpent,
+        minutesSpentField: allPosts[0].fields?.MinutesSpent,
         allFields: Object.keys(allPosts[0].fields || {})
       });
     } else {
@@ -79,6 +81,18 @@ export default async function handler(req, res) {
       
       // Transform posts to include all the fields that GetAllPosts.js provides
       const transformedPosts = posts.map(post => {
+        // Debug: log the HoursSpent field for this post
+        console.log(`[GetMyGames] Post ${post.id} HoursSpent:`, post.fields?.HoursSpent);
+        console.log(`[GetMyGames] Post ${post.id} Created At:`, post.fields?.['Created At'] || post.createdTime);
+        console.log(`[GetMyGames] Post ${post.id} All fields:`, Object.keys(post.fields || {}));
+        console.log(`[GetMyGames] Post ${post.id} HoursSpent field exists:`, 'HoursSpent' in (post.fields || {}));
+        console.log(`[GetMyGames] Post ${post.id} HoursSpent value:`, post.fields?.HoursSpent);
+        console.log(`[GetMyGames] Post ${post.id} HoursSpent type:`, typeof post.fields?.HoursSpent);
+        console.log(`[GetMyGames] Post ${post.id} Converted to:`, {
+          totalHours: post.fields?.HoursSpent || 0,
+          hoursSpent: Math.floor(post.fields?.HoursSpent || 0),
+          minutesSpent: Math.round(((post.fields?.HoursSpent || 0) - Math.floor(post.fields?.HoursSpent || 0)) * 60)
+        });
         const fields = post.fields || {};
         
         // Handle attachments (both Airtable and S3)
@@ -142,9 +156,18 @@ export default async function handler(req, res) {
           gameThumbnail = rec.fields.Thumbnail[0].url;
         }
 
+        // Convert HoursSpent (decimal hours) to hours and minutes
+        const totalHours = fields.HoursSpent || 0;
+        const hoursSpent = Math.floor(totalHours);
+        const minutesSpent = Math.round((totalHours - hoursSpent) * 60);
+        
+        // Calculate HoursSpent in decimal format for PostAttachmentRenderer (e.g., 0.72 for 43 minutes)
+        const calculatedHoursSpent = hoursSpent + (minutesSpent / 60);
+        
         return {
           id: post.id,
           createdTime: post.createdTime,
+          createdAt: fields['Created At'] || post.createdTime || '',
           'Created At': fields['Created At'] || post.createdTime || '',
           PlayLink: typeof fields.PlayLink === 'string' ? fields.PlayLink : '',
           Attachements: attachments,
@@ -158,8 +181,9 @@ export default async function handler(req, res) {
           timelapseVideoId: fields.Timelapse || '',
           githubImageLink: fields['Link to Github Asset'] || '',
           timeScreenshotId: fields.TimeScreenshotFile || '',
-          hoursSpent: fields.HoursSpent || 0,
-          minutesSpent: 0,
+          HoursSpent: calculatedHoursSpent, // Provide decimal hours for PostAttachmentRenderer (e.g., 0.72 for 43 minutes)
+          hoursSpent: hoursSpent,
+          minutesSpent: minutesSpent,
           posterShomatoSeeds: fields.PosterShomatoSeeds || 0,
         };
       });
@@ -270,38 +294,51 @@ async function fetchAllGamesForOwner(ownerToken) {
 }
 
 async function fetchAllPostsForOwner(ownerToken, gameRecords) {
-  // Fetch all posts for this owner using ownerToken - much simpler!
-  console.log(`[GetMyGames] Fetching posts for owner token: ${ownerToken}`);
-  
-  try {
-    let allPosts = [];
-    let offset = null;
+      // Fetch all posts for this owner using ownerToken - much simpler!
+    console.log(`[GetMyGames] Fetching posts for owner token: ${ownerToken}`);
     
-    do {
-      const params = new URLSearchParams({
-        filterByFormula: `{ownerToken} = "${ownerToken}"`,
-        pageSize: '100',
-      });
+    try {
+      let allPosts = [];
+      let offset = null;
       
-      if (offset) {
-        params.set('offset', offset);
-      }
+      do {
+        const params = new URLSearchParams({
+          filterByFormula: `{ownerToken} = "${ownerToken}"`,
+          pageSize: '100',
+        });
+        
+        if (offset) {
+          params.set('offset', offset);
+        }
+        
+        console.log(`[GetMyGames] Fetching posts batch, offset: ${offset || 'none'}`);
+        
+        const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
+        const page = await airtableRequest(url, { method: 'GET' });
+        
+        const records = Array.isArray(page?.records) ? page.records : [];
+        
+        // Log the first post structure to see what fields are available
+        if (records.length > 0 && allPosts.length === 0) {
+          console.log(`[GetMyGames] First post structure:`, {
+            id: records[0].id,
+            fields: records[0].fields,
+            fieldKeys: Object.keys(records[0].fields || {}),
+            hasHoursSpent: 'HoursSpent' in (records[0].fields || {}),
+            hoursSpentValue: records[0].fields?.HoursSpent,
+            hoursSpentType: typeof records[0].fields?.HoursSpent
+          });
+        }
+        
+        allPosts = allPosts.concat(records);
+        offset = page.offset; // Get next page offset
+        
+        console.log(`[GetMyGames] Fetched ${records.length} posts in this batch, total so far: ${allPosts.length}`);
+        
+      } while (offset); // Continue until no more pages
       
-      console.log(`[GetMyGames] Fetching posts batch, offset: ${offset || 'none'}`);
-      
-      const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
-      const page = await airtableRequest(url, { method: 'GET' });
-      
-      const records = Array.isArray(page?.records) ? page.records : [];
-      allPosts = allPosts.concat(records);
-      offset = page.offset; // Get next page offset
-      
-      console.log(`[GetMyGames] Fetched ${records.length} posts in this batch, total so far: ${allPosts.length}`);
-      
-    } while (offset); // Continue until no more pages
-    
-    console.log(`[GetMyGames] Found ${allPosts.length} total posts for owner after pagination`);
-    return allPosts;
+      console.log(`[GetMyGames] Found ${allPosts.length} total posts for owner after pagination`);
+      return allPosts;
     
   } catch (error) {
     console.error(`[GetMyGames] Failed to fetch posts for owner:`, error);

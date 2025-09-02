@@ -2310,6 +2310,7 @@ function DetailView({
                     timelapseVideoId={p.timelapseVideoId}
                     githubImageLink={p.githubImageLink}
                     timeScreenshotId={p.timeScreenshotId}
+                    HoursSpent={p.HoursSpent}
                     hoursSpent={p.hoursSpent}
                     minutesSpent={p.minutesSpent}
                   />
