@@ -38,77 +38,31 @@ export default async function handler(req, res) {
       console.log(`[GetMyGames] No games found, returning empty array`);
       return res.status(200).json([]);
     }
-    // Fetch all posts for this owner in one request - much faster!
-    console.log(`[GetMyGames] About to fetch posts using table: ${AIRTABLE_POSTS_TABLE}`);
-    const allPosts = await fetchAllPostsForOwner(token, gameRecords);
-    console.log(`[GetMyGames] Total posts fetched: ${allPosts.length}`);
-    if (allPosts.length > 0) {
-      console.log(`[GetMyGames] Sample post structure:`, {
-        id: allPosts[0].id,
-        gameField: allPosts[0].fields?.Game,
-        gameFieldType: typeof allPosts[0].fields?.Game,
-        isArray: Array.isArray(allPosts[0].fields?.Game),
-        gameNameField: allPosts[0].fields?.['Game Name'],
-        contentField: allPosts[0].fields?.Content,
-        contentFieldType: typeof allPosts[0].fields?.Content,
-        hoursSpentField: allPosts[0].fields?.HoursSpent,
-        minutesSpentField: allPosts[0].fields?.MinutesSpent,
-        allFields: Object.keys(allPosts[0].fields || {})
-      });
-    } else {
-      console.log(`[GetMyGames] No posts found - this might indicate an issue with the posts query`);
-    }
+
     
-    const games = gameRecords.map((rec) => {
+    const games = await Promise.all(gameRecords.map(async (rec) => {
       const gameId = rec.id;
       const gameName = rec.fields?.Name || '';
       
-      // Filter posts for this specific game from the pre-fetched posts
-      const posts = allPosts.filter(post => {
-        // Use the Game Name field which contains the actual game names
-        const postGameName = post.fields?.['Game Name'];
-        if (Array.isArray(postGameName)) {
-          // If Game Name is an array, check if it contains the game name
-          return postGameName.some(game => game === gameName);
-        } else if (typeof postGameName === 'string') {
-          // If Game Name is a string, check if it matches
-          return postGameName === gameName;
-        }
-        return false;
-      });
+      // Fetch posts for this specific game directly
+      const posts = await fetchPostsForGame(gameId);
       
       console.log(`[GetMyGames] Game "${gameName}" has ${posts.length} posts`);
       
-      // Transform posts to include all the fields that GetAllPosts.js provides
-      const transformedPosts = posts.map(post => {
-        // Debug: log the HoursSpent field for this post
-        console.log(`[GetMyGames] Post ${post.id} HoursSpent:`, post.fields?.HoursSpent);
-        console.log(`[GetMyGames] Post ${post.id} Created At:`, post.fields?.['Created At'] || post.createdTime);
-        console.log(`[GetMyGames] Post ${post.id} All fields:`, Object.keys(post.fields || {}));
-        console.log(`[GetMyGames] Post ${post.id} HoursSpent field exists:`, 'HoursSpent' in (post.fields || {}));
-        console.log(`[GetMyGames] Post ${post.id} HoursSpent value:`, post.fields?.HoursSpent);
-        console.log(`[GetMyGames] Post ${post.id} HoursSpent type:`, typeof post.fields?.HoursSpent);
-        console.log(`[GetMyGames] Post ${post.id} Converted to:`, {
-          totalHours: post.fields?.HoursSpent || 0,
-          hoursSpent: Math.floor(post.fields?.HoursSpent || 0),
-          minutesSpent: Math.round(((post.fields?.HoursSpent || 0) - Math.floor(post.fields?.HoursSpent || 0)) * 60)
-        });
-        const fields = post.fields || {};
-        
-        // Handle attachments (both Airtable and S3)
+      // Transform posts to match the structure that MyGamesComponent expects
+      const transformedPosts = posts.map(rec => {
+        const fields = rec.fields || {};
+        const createdAt = fields['Created At'] || rec.createdTime || '';
+        const playLink = typeof fields.PlayLink === 'string' ? fields.PlayLink : '';
         const attachments = (() => {
           const airtableAttachments = Array.isArray(fields.Attachements)
-            ? fields.Attachements.map((a) => ({
-                url: a?.url,
-                type: a?.type,
-                filename: a?.filename,
-                id: a?.id,
-                size: a?.size,
-              })).filter((a) => a.url)
+            ? fields.Attachements
+                .map((a) => ({ url: a?.url, type: a?.type, filename: a?.filename, id: a?.id, size: a?.size }))
+                .filter((a) => a.url)
             : [];
           
           // Add S3 attachment links
-          const attachmentLinks = fields?.AttachementLinks || '';
+          const attachmentLinks = fields.AttachementLinks || '';
           const s3Attachments = attachmentLinks
             ? attachmentLinks.split(',').map(link => link.trim()).filter(link => link).map(url => {
                 const filename = url.split('/').pop() || 'attachment';
@@ -169,11 +123,11 @@ export default async function handler(req, res) {
         const calculatedHoursSpent = hoursSpent + (minutesSpent / 60);
         
         return {
-          id: post.id,
-          createdTime: post.createdTime,
-          createdAt: fields['Created At'] || post.createdTime || '',
-          'Created At': fields['Created At'] || post.createdTime || '',
-          PlayLink: typeof fields.PlayLink === 'string' ? fields.PlayLink : '',
+          id: rec.id,
+          createdTime: rec.createdTime,
+          createdAt: createdAt,
+          'Created At': createdAt,
+          PlayLink: playLink,
           Attachements: attachments,
           'slack id': fields['slack id'] || '',
           'Game Name': fields['Game Name'] || '',
@@ -213,7 +167,7 @@ export default async function handler(req, res) {
         Feedback: rec.fields?.Feedback || '',
         posts: transformedPosts,
       };
-    });
+    }));
 
     return res.status(200).json(games);
   } catch (error) {
@@ -297,17 +251,48 @@ async function fetchAllGamesForOwner(ownerToken) {
   return [];
 }
 
-async function fetchAllPostsForOwner(ownerToken, gameRecords) {
-      // Fetch all posts for this owner using ownerToken - much simpler!
-    console.log(`[GetMyGames] Fetching posts for owner token: ${ownerToken}`);
+async function fetchPostsForGame(gameId) {
+  console.log('[GetMyGames] fetchPostsForGame gameId:', gameId);
+  
+  // Try the same approach as the working GetPostsForGame.js with pagination
+  try {
+    let allPosts = [];
+    let offset = null;
     
+    do {
+      const params = new URLSearchParams({
+        filterByFormula: `SEARCH("${safeEscapeFormulaString(gameId)}", ARRAYJOIN({Game}))`,
+        sort: '[{"field":"Created At","direction":"desc"}]',
+        pageSize: '100',
+      });
+      
+      if (offset) {
+        params.set('offset', offset);
+      }
+      
+      const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
+      const page = await airtableRequest(url, { method: 'GET' });
+      const records = Array.isArray(page?.records) ? page.records : [];
+      
+      allPosts = allPosts.concat(records);
+      offset = page.offset;
+      
+      console.log(`[GetMyGames] Fetched ${records.length} posts in this batch, total so far: ${allPosts.length}`);
+      
+    } while (offset);
+    
+    console.log(`[GetMyGames] Server filter found ${allPosts.length} total posts for game ${gameId}`);
+    return allPosts;
+  } catch (error) {
+    console.log(`[GetMyGames] Server filter failed, trying fallback approach:`, error.message);
+    
+    // Fallback: fetch all posts and filter client-side
     try {
       let allPosts = [];
       let offset = null;
       
       do {
         const params = new URLSearchParams({
-          filterByFormula: `{ownerToken} = "${ownerToken}"`,
           pageSize: '100',
         });
         
@@ -315,39 +300,33 @@ async function fetchAllPostsForOwner(ownerToken, gameRecords) {
           params.set('offset', offset);
         }
         
-        console.log(`[GetMyGames] Fetching posts batch, offset: ${offset || 'none'}`);
-        
         const url = `${encodeURIComponent(AIRTABLE_POSTS_TABLE)}?${params.toString()}`;
         const page = await airtableRequest(url, { method: 'GET' });
-        
         const records = Array.isArray(page?.records) ? page.records : [];
         
-        // Log the first post structure to see what fields are available
-        if (records.length > 0 && allPosts.length === 0) {
-          console.log(`[GetMyGames] First post structure:`, {
-            id: records[0].id,
-            fields: records[0].fields,
-            fieldKeys: Object.keys(records[0].fields || {}),
-            hasHoursSpent: 'HoursSpent' in (records[0].fields || {}),
-            hoursSpentValue: records[0].fields?.HoursSpent,
-            hoursSpentType: typeof records[0].fields?.HoursSpent
-          });
-        }
+        // Filter posts that contain this gameId in their Game field
+        const filteredRecords = records.filter(rec => {
+          const gameField = rec.fields?.Game;
+          if (Array.isArray(gameField)) {
+            return gameField.includes(gameId);
+          }
+          return false;
+        });
         
-        allPosts = allPosts.concat(records);
-        offset = page.offset; // Get next page offset
+        allPosts = allPosts.concat(filteredRecords);
+        offset = page.offset;
         
-        console.log(`[GetMyGames] Fetched ${records.length} posts in this batch, total so far: ${allPosts.length}`);
-        
-      } while (offset); // Continue until no more pages
+      } while (offset);
       
-      console.log(`[GetMyGames] Found ${allPosts.length} total posts for owner after pagination`);
+      console.log(`[GetMyGames] Fallback found ${allPosts.length} posts for game ${gameId}`);
       return allPosts;
-    
-  } catch (error) {
-    console.error(`[GetMyGames] Failed to fetch posts for owner:`, error);
-    return [];
+    } catch (fallbackError) {
+      console.error(`[GetMyGames] Both approaches failed:`, fallbackError);
+      return [];
+    }
   }
 }
+
+
 
 

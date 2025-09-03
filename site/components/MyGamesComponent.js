@@ -2231,9 +2231,16 @@ function DetailView({
                 gap: 12,
               }}
             >
-              {game.posts.map((p, pIdx) => (
-                <div key={p.id || pIdx} className="moment-card" style={{ position: "relative" }}>
-                  {(() => {
+              {game.posts
+                .sort((a, b) => {
+                  // Sort by createdAt in descending order (newest first)
+                  const dateA = new Date(a.createdAt || a.createdTime || 0);
+                  const dateB = new Date(b.createdAt || b.createdTime || 0);
+                  return dateB - dateA;
+                })
+                .map((p, pIdx) => (
+                  <div key={p.id || pIdx} className="moment-card" style={{ position: "relative" }}>
+                    {(() => {
                     // Check if post was created within the last 24 hours
                     const postDate = new Date(p.createdAt);
                     const now = new Date();
