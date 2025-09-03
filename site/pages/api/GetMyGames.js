@@ -98,13 +98,17 @@ export default async function handler(req, res) {
         // Handle attachments (both Airtable and S3)
         const attachments = (() => {
           const airtableAttachments = Array.isArray(fields.Attachements)
-            ? fields.Attachements
-                .map((a) => ({ url: a?.url, type: a?.type, filename: a?.filename, id: a?.id, size: a?.size }))
-                .filter((a) => a.url)
+            ? fields.Attachements.map((a) => ({
+                url: a?.url,
+                type: a?.type,
+                filename: a?.filename,
+                id: a?.id,
+                size: a?.size,
+              })).filter((a) => a.url)
             : [];
           
           // Add S3 attachment links
-          const attachmentLinks = fields.AttachementLinks || '';
+          const attachmentLinks = fields?.AttachementLinks || '';
           const s3Attachments = attachmentLinks
             ? attachmentLinks.split(',').map(link => link.trim()).filter(link => link).map(url => {
                 const filename = url.split('/').pop() || 'attachment';
