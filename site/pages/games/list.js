@@ -135,11 +135,12 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
                 <p>No games found with ShibaLinks.</p>
               </div>
             ) : (
-              <div style={{
+              <div className="game-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                 gap: '2rem',
-                paddingBottom: '2rem'
+                paddingBottom: '2rem',
+                maxWidth: '100%'
               }}>
                 {games.map((game) => (
                   <a 
@@ -147,6 +148,7 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
                     href={game.ShibaLink}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="game-card"
                     style={{
                       position: 'relative',
                       display: 'flex',
@@ -329,6 +331,29 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
         .game-thumbnail-disc:hover {
           transform: rotate(360.05deg);
           transition: transform 4s linear;
+        }
+        
+        @media (max-width: 768px) {
+          .game-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1rem !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .game-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+          
+          .game-card {
+            padding: 1rem !important;
+          }
+          
+          .game-thumbnail-disc {
+            width: 140px !important;
+            height: 140px !important;
+          }
         }
       `}</style>
     </>
