@@ -128,7 +128,7 @@ export default async function handler(req, res) {
           createdAt: createdAt,
           'Created At': createdAt,
           PlayLink: playLink,
-          Attachements: attachments,
+          attachments: attachments,
           'slack id': fields['slack id'] || '',
           'Game Name': fields['Game Name'] || '',
           content: fields.Content || '',

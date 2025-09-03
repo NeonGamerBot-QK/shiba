@@ -54,7 +54,7 @@ export default function GamesPage({ gameData, error }) {
           minHeight: '100vh', 
           display: 'flex', 
           flexDirection: 'column', 
-          background: 'linear-gradient(180deg, #FFA500 0px, #FFB347 100px, #FFD700 200px, #FFE4B5 300px, #fff 400px, #fff 100%)',
+          background: 'linear-gradient(180deg, #f8f9fa 0px, #f1f3f4 100px, #e8eaed 200px, #f8f9fa 300px, #fff 400px, #fff 100%)',
           justifyContent: 'center'
         }}>
           <p>Error: {error}</p>
@@ -77,7 +77,7 @@ export default function GamesPage({ gameData, error }) {
           minHeight: '100vh', 
           display: 'flex', 
           flexDirection: 'column', 
-          background: 'linear-gradient(180deg, #FFA500 0px, #FFB347 100px, #FFD700 200px, #FFE4B5 300px, #fff 400px, #fff 100%)',
+          background: 'linear-gradient(180deg, #f8f9fa 0px, #f1f3f4 100px, #e8eaed 200px, #f8f9fa 300px, #fff 400px, #fff 100%)',
           justifyContent: 'center'
         }}>
           <p>Loading...</p>
@@ -120,7 +120,7 @@ export default function GamesPage({ gameData, error }) {
         minHeight: '100vh', 
         display: 'flex', 
         flexDirection: 'column', 
-        background: 'linear-gradient(180deg, #FFA500 0px, #FFB347 100px, #FFD700 200px, #FFE4B5 300px, #fff 400px, #fff 100%)',
+        background: 'linear-gradient(180deg, #f8f9fa 0px, #f1f3f4 100px, #e8eaed 200px, #f8f9fa 300px, #fff 400px, #fff 100%)',
         position: 'relative'
       }}>
         <div style={{
@@ -133,7 +133,8 @@ export default function GamesPage({ gameData, error }) {
           backgroundSize: '100%',
           imageRendering: 'pixelated',
           backgroundRepeat: 'repeat',
-          mixBlendMode: 'color-burn',
+          mixBlendMode: 'multiply',
+          opacity: 0.1,
           pointerEvents: 'none',
           zIndex: 1
         }} />
