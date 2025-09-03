@@ -137,7 +137,7 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
             ) : (
               <div className="game-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '2rem',
                 paddingBottom: '2rem',
                 maxWidth: '100%'
@@ -331,6 +331,13 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
         .game-thumbnail-disc:hover {
           transform: rotate(360.05deg);
           transition: transform 4s linear;
+        }
+        
+        @media (max-width: 1024px) {
+          .game-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1.5rem !important;
+          }
         }
         
         @media (max-width: 768px) {
