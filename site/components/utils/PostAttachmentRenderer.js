@@ -4,11 +4,21 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
-export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset }) {
+export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset, currentUserProfile, onTimeUpdated }) {
   const [slackProfile, setSlackProfile] = useState(null);
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [editHours, setEditHours] = useState(0);
+  const [editMinutes, setEditMinutes] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localTimeSpentOnAsset, setLocalTimeSpentOnAsset] = useState(timeSpentOnAsset);
   
   // Calculate timeSpentOnAsset from hoursSpent and minutesSpent if not provided
-  const calculatedTimeSpentOnAsset = timeSpentOnAsset || (hoursSpent && minutesSpent ? hoursSpent + (minutesSpent / 60) : 0);
+  const calculatedTimeSpentOnAsset = localTimeSpentOnAsset || (hoursSpent && minutesSpent ? hoursSpent + (minutesSpent / 60) : 0);
+
+  // Sync local state with prop changes
+  useEffect(() => {
+    setLocalTimeSpentOnAsset(timeSpentOnAsset);
+  }, [timeSpentOnAsset]);
   
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +37,62 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
     load();
     return () => { cancelled = true; };
   }, [slackId]);
+
+  // Check if this post belongs to the current user
+  const isOwnPost = currentUserProfile && currentUserProfile.slackId && slackId && currentUserProfile.slackId === slackId;
+  const isArtlog = postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0);
+  const canEdit = isOwnPost && isArtlog && token && postId;
+
+  // Initialize edit values when entering edit mode
+  useEffect(() => {
+    if (isEditingTime && calculatedTimeSpentOnAsset > 0) {
+      setEditHours(Math.floor(calculatedTimeSpentOnAsset));
+      setEditMinutes(Math.round((calculatedTimeSpentOnAsset % 1) * 60));
+    }
+  }, [isEditingTime, calculatedTimeSpentOnAsset]);
+
+  // Handle time update submission
+  const handleTimeUpdate = async () => {
+    if (!token || !postId || isSubmitting) return;
+    
+    const newTimeSpent = editHours + (editMinutes / 60);
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/updatePostTimeSpent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          postId,
+          timeSpentOnAsset: newTimeSpent
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.ok) {
+        // Update the local state to reflect the change immediately
+        setLocalTimeSpentOnAsset(newTimeSpent);
+        setIsEditingTime(false);
+        
+        // Call the callback to notify parent component if provided
+        if (onTimeUpdated) {
+          onTimeUpdated(postId, newTimeSpent);
+        }
+        
+        console.log('Time updated successfully:', data);
+      } else {
+        console.error('Failed to update time:', data.message);
+        alert('Failed to update time: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating time:', error);
+      alert('Error updating time: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   // Prefer explicit PlayLink field provided by API
   let playHref = typeof playLink === 'string' && playLink.trim() ? playLink.trim() : null;
 
@@ -521,12 +587,102 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
               alignItems: 'center', 
               gap: '8px',
               fontSize: '14px',
-              color: '#666'
+              color: '#666',
+              position: 'relative'
             }}>
               <span>⏱️</span>
-              <span>
-                {`${Math.floor(calculatedTimeSpentOnAsset)}h${Math.round((calculatedTimeSpentOnAsset % 1) * 60)}m`}
-              </span>
+              {isEditingTime ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="999"
+                    value={editHours}
+                    onChange={(e) => setEditHours(parseInt(e.target.value) || 0)}
+                    style={{
+                      width: '40px',
+                      padding: '2px 4px',
+                      border: '1px solid #ddd',
+                      borderRadius: '3px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <span>h</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={editMinutes}
+                    onChange={(e) => setEditMinutes(parseInt(e.target.value) || 0)}
+                    style={{
+                      width: '40px',
+                      padding: '2px 4px',
+                      border: '1px solid #ddd',
+                      borderRadius: '3px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <span>m</span>
+                  <button
+                    onClick={handleTimeUpdate}
+                    disabled={isSubmitting}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      backgroundColor: '#ff6fa5',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: isSubmitting ? 0.6 : 1
+                    }}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingTime(false)}
+                    disabled={isSubmitting}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      backgroundColor: '#ccc',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: isSubmitting ? 0.6 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>
+                    {`${Math.floor(calculatedTimeSpentOnAsset)}h${Math.round((calculatedTimeSpentOnAsset % 1) * 60)}m`}
+                  </span>
+                  {canEdit && (
+                    <button
+                      onClick={() => setIsEditingTime(true)}
+                      style={{
+                        padding: '2px 4px',
+                        fontSize: '10px',
+                        backgroundColor: 'transparent',
+                        color: '#ff6fa5',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.opacity = '1'}
+                      onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                    >
+                      ✏️
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -354,6 +354,9 @@ export default function GamesPage({ gameData, error }) {
                         hoursSpent={p.hoursSpent || p.HoursSpent || 0}
                         timeSpentOnAsset={p.timeSpentOnAsset || 0}
                         minutesSpent={p.minutesSpent}
+                        postId={p.PostID}
+                        currentUserProfile={null}
+                        onTimeUpdated={() => {}} // No-op for public pages
                       />
                     </div>
                   ))}

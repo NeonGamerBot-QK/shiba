@@ -90,6 +90,7 @@ export default function MyGamesPage() {
               setDisableTopBar(false);
               router.push("/?openProfile=true");
             }}
+            profile={profile}
           />
         </div>
       </div>
