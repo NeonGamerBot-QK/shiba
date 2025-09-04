@@ -369,8 +369,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   ? (
                     <>
                       <span>
-                        {Math.floor(timeSpentOnAsset) > 0 ? `${Math.floor(timeSpentOnAsset)}hr ` : ''}
-                        {Math.floor((timeSpentOnAsset % 1) * 60)}min logged
+                        {`${Math.floor(timeSpentOnAsset)}h${Math.round((timeSpentOnAsset % 1) * 60)}m`} logged
                       </span>
                       <span style={{ fontSize: 8 }}>●</span>
                     </>
@@ -378,7 +377,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   : (HoursSpent && HoursSpent > 0 && Math.floor((HoursSpent % 1) * 60) > 0 && (
                     <>
                       <span>
-                        {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.floor((HoursSpent % 1) * 60)}min logged
+                        {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.round((HoursSpent % 1) * 60)}min logged
                       </span>
                       <span style={{ fontSize: 8 }}>●</span>
                     </>

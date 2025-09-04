@@ -157,7 +157,7 @@ export default async function handler(req, res) {
           PostID: latest.fields?.PostID || postId,
           createdAt: latest.fields?.['Created At'] || latest.createdTime || new Date().toISOString(),
           PlayLink: typeof latest.fields?.PlayLink === 'string' ? latest.fields.PlayLink : '',
-          postType: latest.fields?.PostType || 'devlog',
+          postType: (latest.fields?.Timelapse && latest.fields?.['Link to Github Asset'] && latest.fields?.TimeSpentOnAsset) ? 'artlog' : 'devlog',
                         timelapseVideoId: latest.fields?.Timelapse || '',
               githubImageLink: latest.fields?.['Link to Github Asset'] || '',
               timeScreenshotId: latest.fields?.TimeScreenshotFile?.[0]?.url || '',

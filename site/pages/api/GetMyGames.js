@@ -135,7 +135,7 @@ export default async function handler(req, res) {
           PostID: fields.PostID || '',
           GameThumbnail: gameThumbnail,
           badges: Array.isArray(fields.Badges) ? fields.Badges : [],
-          postType: fields.PostType || 'devlog',
+          postType: (fields.Timelapse && fields['Link to Github Asset'] && fields.TimeSpentOnAsset) ? 'artlog' : 'devlog',
           timelapseVideoId: fields.Timelapse || '',
           githubImageLink: fields['Link to Github Asset'] || '',
           timeScreenshotId: fields.TimeScreenshotFile || '',
