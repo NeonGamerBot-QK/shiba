@@ -1,6 +1,79 @@
 import Head from 'next/head';
+import { useState, useEffect } from 'react';
 
-export default function GamesIndexPage({ games, slackProfiles, error }) {
+export default function GamesIndexPage({ games, error }) {
+  const [slackProfiles, setSlackProfiles] = useState({});
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+
+  useEffect(() => {
+    const fetchSlackProfiles = async () => {
+      if (!games || games.length === 0) return;
+      
+      try {
+        setLoadingProfiles(true);
+        const uniqueSlackIds = [...new Set(games.map(game => game['slack id']).filter(Boolean))];
+        const profiles = {};
+        
+        // Check localStorage cache first
+        const cachedProfiles = localStorage.getItem('slackProfilesCache');
+        const cacheTimestamp = localStorage.getItem('slackProfilesCacheTimestamp');
+        const now = Date.now();
+        const cacheAge = now - (parseInt(cacheTimestamp) || 0);
+        const cacheValid = cacheAge < (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+        
+        if (cachedProfiles && cacheValid) {
+          try {
+            const parsedProfiles = JSON.parse(cachedProfiles);
+            // Only use cached profiles for the current games
+            for (const slackId of uniqueSlackIds) {
+              if (parsedProfiles[slackId]) {
+                profiles[slackId] = parsedProfiles[slackId];
+              }
+            }
+            setSlackProfiles(profiles);
+            setLoadingProfiles(false);
+            return; // Use cached data, no need to fetch
+          } catch (e) {
+            console.error('Error parsing cached profiles:', e);
+            // Fall through to fetch fresh data
+          }
+        }
+        
+        // Fetch fresh data for missing profiles
+        for (const slackId of uniqueSlackIds) {
+          if (!profiles[slackId]) {
+            try {
+              const res = await fetch(
+                `https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`,
+              );
+              const json = await res.json().catch(() => ({}));
+              if (json && (json.displayName || json.image)) {
+                profiles[slackId] = {
+                  displayName: json.displayName || '',
+                  image: json.image || '',
+                };
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+        
+        // Cache the profiles for 24 hours
+        localStorage.setItem('slackProfilesCache', JSON.stringify(profiles));
+        localStorage.setItem('slackProfilesCacheTimestamp', now.toString());
+        
+        setSlackProfiles(profiles);
+      } catch (error) {
+        console.error('Error fetching Slack profiles:', error);
+      } finally {
+        setLoadingProfiles(false);
+      }
+    };
+
+    fetchSlackProfiles();
+  }, [games]);
+
   if (error) {
     return (
       <>
@@ -310,7 +383,9 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             maxWidth: '120px'
-                          }}>{profile?.displayName || game['slack id']}</span>
+                          }}>
+                            {loadingProfiles ? '...' : (profile?.displayName || game['slack id'])}
+                          </span>
                         </div>
                       );
                     })()}
@@ -367,13 +442,11 @@ export default function GamesIndexPage({ games, slackProfiles, error }) {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getStaticProps() {
   try {
-    // Get the host from the request
-    const protocol = context.req.headers['x-forwarded-proto'] || 'http';
-    const host = context.req.headers.host;
-    const baseUrl = `${protocol}://${host}`;
-
+    // Use absolute URL for static generation
+    const baseUrl = 'https://shiba.hackclub.com';
+    
     const response = await fetch(`${baseUrl}/api/GetAllGames?limit=100`);
     
     if (!response.ok) {
@@ -381,41 +454,20 @@ export async function getServerSideProps(context) {
     }
 
     const games = await response.json();
-    
-    // Fetch Slack profiles for all unique creators
-    const uniqueSlackIds = [...new Set(games.map(game => game['slack id']).filter(Boolean))];
-    const slackProfiles = {};
-    
-    for (const slackId of uniqueSlackIds) {
-      try {
-        const res = await fetch(
-          `https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`,
-        );
-        const json = await res.json().catch(() => ({}));
-        if (json && (json.displayName || json.image)) {
-          slackProfiles[slackId] = {
-            displayName: json.displayName || '',
-            image: json.image || '',
-          };
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
 
     return {
       props: {
         games,
-        slackProfiles,
         error: null
-      }
+      },
+      // Cache for 1 hour (3600 seconds)
+      revalidate: 3600
     };
   } catch (error) {
     console.error('Error fetching games:', error);
     return {
       props: {
         games: null,
-        slackProfiles: {},
         error: error.message || 'Failed to load games'
       }
     };
