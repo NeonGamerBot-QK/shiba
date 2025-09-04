@@ -11,7 +11,7 @@ export default function GamesPage({ gameData, error }) {
   const { user, id } = router.query;
   const [loading, setLoading] = useState(false);
   const [slackProfile, setSlackProfile] = useState(null);
-  const [selectedView, setSelectedView] = useState('Devlogs'); // 'Devlogs' | 'Plays'
+  const [selectedView, setSelectedView] = useState('Devlogs'); // 'Devlogs' | 'Artlogs' | 'Plays'
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
 
   // Fetch Slack displayName and image via cachet
@@ -288,7 +288,35 @@ export default function GamesPage({ gameData, error }) {
             >
               Devlogs
               {Array.isArray(gameData?.posts) && gameData.posts.length > 0 && (() => {
-                const totalHours = gameData.posts.reduce((sum, post) => sum + (post.HoursSpent || 0), 0);
+                const devlogPosts = gameData.posts.filter(post => post.postType !== 'artlog');
+                const totalHours = devlogPosts.reduce((sum, post) => sum + (post.HoursSpent || 0), 0);
+                return totalHours > 0 ? (
+                  <span style={{ marginLeft: "6px", opacity: 0.8 }}>
+                    ({totalHours.toFixed(2)} hours)
+                  </span>
+                ) : null;
+              })()}
+            </button>
+            
+            <button
+              onClick={() => setSelectedView("Artlogs")}
+              style={{
+                appearance: "none",
+                border: selectedView === "Artlogs" ? "2px solid #000" : "1px solid #ccc",
+                background: selectedView === "Artlogs" ? "#000" : "#fff",
+                color: selectedView === "Artlogs" ? "#fff" : "#000",
+                borderRadius: "8px",
+                padding: "8px 12px",
+                cursor: "pointer",
+                fontWeight: "700",
+                fontSize: "14px",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Artlogs
+              {Array.isArray(gameData?.posts) && gameData.posts.length > 0 && (() => {
+                const artlogPosts = gameData.posts.filter(post => post.postType === 'artlog');
+                const totalHours = artlogPosts.reduce((sum, post) => sum + (post.timeSpentOnAsset || 0), 0);
                 return totalHours > 0 ? (
                   <span style={{ marginLeft: "6px", opacity: 0.8 }}>
                     ({totalHours.toFixed(2)} hours)
@@ -322,9 +350,11 @@ export default function GamesPage({ gameData, error }) {
           {/* Devlogs View */}
           {selectedView === "Devlogs" && (
             <>
-              {Array.isArray(gameData?.posts) && gameData.posts.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: "32px" }}>
-                  {gameData.posts.map((p, pIdx) => (
+              {Array.isArray(gameData?.posts) && gameData.posts.length > 0 ? (() => {
+                const devlogPosts = gameData.posts.filter(post => post.postType !== 'artlog');
+                return devlogPosts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: "32px" }}>
+                    {devlogPosts.map((p, pIdx) => (
                     <div key={p.id || pIdx} className="moment-card" style={{ 
                       position: "relative",
                       border: "1px solid rgba(0, 0, 0, 0.18)",
@@ -359,9 +389,71 @@ export default function GamesPage({ gameData, error }) {
                         onTimeUpdated={() => {}} // No-op for public pages
                       />
                     </div>
-                  ))}
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{width: "100%", border: "1px solid #000", padding: 16}}>
+                    <p>No devlog posts yet</p>
+                  </div>
+                );
+              })() : (
+                <div style={{width: "100%", border: "1px solid #000", padding: 16}}>
+                  <p>No posts yet</p>
                 </div>
-              ) : (
+              )}
+            </>
+          )}
+
+          {/* Artlogs View */}
+          {selectedView === "Artlogs" && (
+            <>
+              {Array.isArray(gameData?.posts) && gameData.posts.length > 0 ? (() => {
+                const artlogPosts = gameData.posts.filter(post => post.postType === 'artlog');
+                return artlogPosts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: "32px" }}>
+                    {artlogPosts.map((p, pIdx) => (
+                    <div key={p.id || pIdx} className="moment-card" style={{ 
+                      position: "relative",
+                      border: "1px solid rgba(0, 0, 0, 0.18)",
+                      borderRadius: "10px",
+                      background: "rgba(255, 255, 255, 0.8)",
+                      padding: "12px"
+                    }}>
+                      <PostAttachmentRenderer
+                        content={p.content}
+                        attachments={p.attachments}
+                        playLink={p.PlayLink}
+                        gameName={gameData?.name || ""}
+                        thumbnailUrl={gameData?.thumbnailUrl || ""}
+                        token={null}
+                        slackId={user}
+                        createdAt={p.createdAt}
+                        badges={p.badges}
+                        HoursSpent={p.HoursSpent}
+                        gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
+                        onPlayCreated={(play) => {
+                          console.log("Play created:", play);
+                        }}
+                        postType={p.postType}
+                        timelapseVideoId={p.timelapseVideoId}
+                        githubImageLink={p.githubImageLink}
+                        timeScreenshotId={p.timeScreenshotId}
+                        hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                        timeSpentOnAsset={p.timeSpentOnAsset || 0}
+                        minutesSpent={p.minutesSpent}
+                        postId={p.PostID}
+                        currentUserProfile={null}
+                        onTimeUpdated={() => {}} // No-op for public pages
+                      />
+                    </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{width: "100%", border: "1px solid #000", padding: 16}}>
+                    <p>No artlog posts yet</p>
+                  </div>
+                );
+              })() : (
                 <div style={{width: "100%", border: "1px solid #000", padding: 16}}>
                   <p>No posts yet</p>
                 </div>
