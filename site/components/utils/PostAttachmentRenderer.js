@@ -509,9 +509,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
             }}>
               <span>⏱️</span>
               <span>
-                {hoursSpent >= 1 ? `${Math.floor(hoursSpent)}h` : ''}
-                {hoursSpent % 1 > 0 ? `${Math.round((hoursSpent % 1) * 60)}m` : ''}
-                {hoursSpent < 1 ? `${Math.round(hoursSpent * 60)}m` : ''}
+                {`${Math.floor(hoursSpent)}h${Math.round((hoursSpent % 1) * 60)}m`}
               </span>
             </div>
           )}
