@@ -4,8 +4,11 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
-export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId }) {
+export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset }) {
   const [slackProfile, setSlackProfile] = useState(null);
+  
+  // Calculate timeSpentOnAsset from hoursSpent and minutesSpent if not provided
+  const calculatedTimeSpentOnAsset = timeSpentOnAsset || (hoursSpent && minutesSpent ? hoursSpent + (minutesSpent / 60) : 0);
   
   useEffect(() => {
     let cancelled = false;
@@ -362,14 +365,25 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
             </div>
             {createdAt ? (
               <div style={{ display: 'flex', flexDirection: 'row', gap: 8, fontSize: 11, opacity: 0.6, marginTop: 2, alignItems: 'center' }}>
-                {HoursSpent && HoursSpent > 0 && Math.floor((HoursSpent % 1) * 60) > 0 && (
-                  <>
-                    <span>
-                      {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.floor((HoursSpent % 1) * 60)}min logged
-                    </span>
-                    <span style={{ fontSize: 8 }}>●</span>
-                  </>
-                )}
+                {timeSpentOnAsset
+                  ? (
+                    <>
+                      <span>
+                        {Math.floor(timeSpentOnAsset) > 0 ? `${Math.floor(timeSpentOnAsset)}hr ` : ''}
+                        {Math.floor((timeSpentOnAsset % 1) * 60)}min logged
+                      </span>
+                      <span style={{ fontSize: 8 }}>●</span>
+                    </>
+                  )
+                  : (HoursSpent && HoursSpent > 0 && Math.floor((HoursSpent % 1) * 60) > 0 && (
+                    <>
+                      <span>
+                        {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.floor((HoursSpent % 1) * 60)}min logged
+                      </span>
+                      <span style={{ fontSize: 8 }}>●</span>
+                    </>
+                  ))
+                }
                 <span>
                   {new Date(createdAt).toLocaleTimeString('en-US', {
                     hour: 'numeric',
@@ -402,12 +416,15 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
         postType,
         timelapseVideoId,
         githubImageLink,
+        timeSpentOnAsset,
         hoursSpent,
-        condition: postType === 'artlog' || (timelapseVideoId && githubImageLink && hoursSpent > 0)
+        minutesSpent,
+        calculatedTimeSpentOnAsset,
+        condition: postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0)
       })}
       
       {/* Artlog-specific rendering */}
-      {(postType === 'artlog' || (timelapseVideoId && githubImageLink && hoursSpent > 0)) && (
+      {(postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0)) && (
         <div style={{ 
           border: '2px solid #ff6fa5', 
           borderRadius: '12px', 
@@ -499,7 +516,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
           )}
           
           {/* Time Display */}
-          {hoursSpent > 0 && (
+          {calculatedTimeSpentOnAsset > 0 && (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -509,7 +526,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
             }}>
               <span>⏱️</span>
               <span>
-                {`${Math.floor(hoursSpent)}h${Math.round((hoursSpent % 1) * 60)}m`}
+                {`${Math.floor(calculatedTimeSpentOnAsset)}h${Math.round((calculatedTimeSpentOnAsset % 1) * 60)}m`}
               </span>
             </div>
           )}

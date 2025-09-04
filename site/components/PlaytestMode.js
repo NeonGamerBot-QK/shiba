@@ -431,6 +431,7 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                     githubImageLink={post.githubImageLink}
                     timeScreenshotId={post.timeScreenshotId}
                     hoursSpent={post.hoursSpent}
+                    timeSpentOnAsset={post.timeSpentOnAsset}
                     minutesSpent={post.minutesSpent}
                   />
                 </div>

@@ -290,6 +290,7 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
                     githubImageLink={p.githubImageLink}
                     timeScreenshotId={p.timeScreenshotId}
                     hoursSpent={p.hoursSpent}
+                    timeSpentOnAsset={p.timeSpentOnAsset}
                     minutesSpent={p.minutesSpent}
                     postId={p.postId}
                   />

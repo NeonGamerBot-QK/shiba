@@ -352,6 +352,7 @@ export default function GamesPage({ gameData, error }) {
                         githubImageLink={p.githubImageLink}
                         timeScreenshotId={p.timeScreenshotId}
                         hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                        timeSpentOnAsset={p.timeSpentOnAsset || 0}
                         minutesSpent={p.minutesSpent}
                       />
                     </div>

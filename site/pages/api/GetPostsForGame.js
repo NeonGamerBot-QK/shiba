@@ -168,6 +168,7 @@ async function fetchPostsForGame(gameId) {
       timeScreenshotId: fields.TimeScreenshotFile || '',
       hoursSpent: fields.HoursSpent || 0,
       minutesSpent: 0,
+      timeSpentOnAsset: fields.TimeSpentOnAsset || 0,
     };
   });
 }

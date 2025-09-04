@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       if (timeScreenshotId && timeScreenshotId.trim() !== '') {
         fields.TimeScreenshotFile = [{ url: timeScreenshotId }];
       }
-      fields.HoursSpent = parseFloat(hoursSpent) + (parseFloat(minutesSpent) / 60);
+      fields.TimeSpentOnAsset = parseFloat(hoursSpent) + (parseFloat(minutesSpent) / 60);
     }
 
     if (typeof playLink === 'string' && playLink.trim().length > 0) {
@@ -161,7 +161,8 @@ export default async function handler(req, res) {
                         timelapseVideoId: latest.fields?.Timelapse || '',
               githubImageLink: latest.fields?.['Link to Github Asset'] || '',
               timeScreenshotId: latest.fields?.TimeScreenshotFile?.[0]?.url || '',
-              hoursSpent: latest.fields?.HoursSpent || 0,
+              hoursSpent: postType === 'artlog' ? (latest.fields?.TimeSpentOnAsset || 0) : (latest.fields?.HoursSpent || 0),
+              timeSpentOnAsset: latest.fields?.TimeSpentOnAsset || 0,
               minutesSpent: 0,
           attachments: (() => {
             const airtableAttachments = Array.isArray(latest.fields?.Attachements)

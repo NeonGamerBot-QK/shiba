@@ -142,6 +142,7 @@ export default async function handler(req, res) {
           HoursSpent: calculatedHoursSpent, // Provide decimal hours for PostAttachmentRenderer (e.g., 0.72 for 43 minutes)
           hoursSpent: hoursSpent,
           minutesSpent: minutesSpent,
+          timeSpentOnAsset: fields.TimeSpentOnAsset || 0,
           posterShomatoSeeds: fields.PosterShomatoSeeds || 0,
         };
       });
