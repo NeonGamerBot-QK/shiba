@@ -1528,6 +1528,8 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [openMatchaModal, setOpenMatchaModal] = useState(false);
   const [isSSSExplainerOpen, setIsSSSExplainerOpen] = useState(false);
+  const [customBackgroundImage, setCustomBackgroundImage] = useState(null);
+  const [subtitleTextWhite, setSubtitleTextWhite] = useState(false);
 
   // Preload SFX and game clip audios for instant playback
   const sfxFiles = ["next.mp3", "prev.mp3", "shiba-bark.mp3"];
@@ -1557,6 +1559,34 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   useEffect(() => {
     const hasOpened = getCookie("hasOpenedEventsNotification");
     setHasOpenedEventsNotification(hasOpened === "true");
+  }, []);
+
+  // Fetch site settings for custom background
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const res = await fetch('/api/GetSiteSettings');
+        const data = await res.json();
+        if (res.ok && data?.ok && data?.settings) {
+          const backgroundSetting = data.settings.mainPageBackground;
+          if (backgroundSetting && backgroundSetting.trim() !== '') {
+            // Parse the comma-separated value: "url, true/false"
+            const parts = backgroundSetting.split(',').map(part => part.trim());
+            const imageUrl = parts[0];
+            const shouldMakeTextWhite = parts[1]?.toLowerCase() === 'true';
+            
+            if (imageUrl) {
+              setCustomBackgroundImage(imageUrl);
+            }
+            setSubtitleTextWhite(shouldMakeTextWhite);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch site settings:', error);
+      }
+    };
+
+    fetchSiteSettings();
   }, []);
 
   // Set cookie when events modal is opened
@@ -1678,9 +1708,15 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
           backgroundColor: games[selectedGame].bgColor,
           transition: "background-color 0.5s ease-in-out",
           minHeight: "100vh",
+          ...(customBackgroundImage && {
+            backgroundImage: `url(${customBackgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }),
         }}
       >
-        <MovingBackground />
+        {!customBackgroundImage && <MovingBackground />}
         <div
           style={{
             position: "absolute",
@@ -1885,7 +1921,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
             isMuted={isMuted}
             playClip={playClip}
           />
-          <GameDetails game={games[selectedGame]} />
+          <GameDetails game={games[selectedGame]} subtitleTextWhite={subtitleTextWhite} />
         </div>
         <div
           style={{
