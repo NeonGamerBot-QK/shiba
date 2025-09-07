@@ -4,8 +4,21 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
-export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId }) {
+export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset, currentUserProfile, onTimeUpdated }) {
   const [slackProfile, setSlackProfile] = useState(null);
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [editHours, setEditHours] = useState(0);
+  const [editMinutes, setEditMinutes] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localTimeSpentOnAsset, setLocalTimeSpentOnAsset] = useState(timeSpentOnAsset);
+  
+  // Calculate timeSpentOnAsset from hoursSpent and minutesSpent if not provided
+  const calculatedTimeSpentOnAsset = localTimeSpentOnAsset || (hoursSpent && minutesSpent ? hoursSpent + (minutesSpent / 60) : 0);
+
+  // Sync local state with prop changes
+  useEffect(() => {
+    setLocalTimeSpentOnAsset(timeSpentOnAsset);
+  }, [timeSpentOnAsset]);
   
   useEffect(() => {
     let cancelled = false;
@@ -24,6 +37,62 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
     load();
     return () => { cancelled = true; };
   }, [slackId]);
+
+  // Check if this post belongs to the current user
+  const isOwnPost = currentUserProfile && currentUserProfile.slackId && slackId && currentUserProfile.slackId === slackId;
+  const isArtlog = postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0);
+  const canEdit = isOwnPost && isArtlog && token && postId;
+
+  // Initialize edit values when entering edit mode
+  useEffect(() => {
+    if (isEditingTime && calculatedTimeSpentOnAsset > 0) {
+      setEditHours(Math.floor(calculatedTimeSpentOnAsset));
+      setEditMinutes(Math.round((calculatedTimeSpentOnAsset % 1) * 60));
+    }
+  }, [isEditingTime, calculatedTimeSpentOnAsset]);
+
+  // Handle time update submission
+  const handleTimeUpdate = async () => {
+    if (!token || !postId || isSubmitting) return;
+    
+    const newTimeSpent = editHours + (editMinutes / 60);
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/updatePostTimeSpent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          postId,
+          timeSpentOnAsset: newTimeSpent
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.ok) {
+        // Update the local state to reflect the change immediately
+        setLocalTimeSpentOnAsset(newTimeSpent);
+        setIsEditingTime(false);
+        
+        // Call the callback to notify parent component if provided
+        if (onTimeUpdated) {
+          onTimeUpdated(postId, newTimeSpent);
+        }
+        
+        console.log('Time updated successfully:', data);
+      } else {
+        console.error('Failed to update time:', data.message);
+        alert('Failed to update time: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating time:', error);
+      alert('Error updating time: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   // Prefer explicit PlayLink field provided by API
   let playHref = typeof playLink === 'string' && playLink.trim() ? playLink.trim() : null;
 
@@ -340,6 +409,83 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   </div>
                 </div>
               )}
+              {Array.isArray(badges) && badges.includes('Shiba Showreel Submitter') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/ShibaShowreel.png"
+                    alt="Shiba Showreel Submitter"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#FFF3CD',
+                      border: '1px solid #FFC107',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Shiba Showreel Submitter
+                  </div>
+                </div>
+              )}
               {gameName ? (
                 gamePageUrl ? (
                   <a
@@ -362,14 +508,24 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
             </div>
             {createdAt ? (
               <div style={{ display: 'flex', flexDirection: 'row', gap: 8, fontSize: 11, opacity: 0.6, marginTop: 2, alignItems: 'center' }}>
-                {HoursSpent && HoursSpent > 0 && Math.floor((HoursSpent % 1) * 60) > 0 && (
-                  <>
-                    <span>
-                      {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.floor((HoursSpent % 1) * 60)}min logged
-                    </span>
-                    <span style={{ fontSize: 8 }}>●</span>
-                  </>
-                )}
+                {timeSpentOnAsset
+                  ? (
+                    <>
+                      <span>
+                        {`${Math.floor(timeSpentOnAsset)}h${Math.round((timeSpentOnAsset % 1) * 60)}m`} logged
+                      </span>
+                      <span style={{ fontSize: 8 }}>●</span>
+                    </>
+                  )
+                  : (HoursSpent && HoursSpent > 0 && Math.floor((HoursSpent % 1) * 60) > 0 && (
+                    <>
+                      <span>
+                        {Math.floor(HoursSpent) > 0 ? `${Math.floor(HoursSpent)}hr ` : ''}{Math.round((HoursSpent % 1) * 60)}min logged
+                      </span>
+                      <span style={{ fontSize: 8 }}>●</span>
+                    </>
+                  ))
+                }
                 <span>
                   {new Date(createdAt).toLocaleTimeString('en-US', {
                     hour: 'numeric',
@@ -402,12 +558,15 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
         postType,
         timelapseVideoId,
         githubImageLink,
+        timeSpentOnAsset,
         hoursSpent,
-        condition: postType === 'artlog' || (timelapseVideoId && githubImageLink && hoursSpent > 0)
+        minutesSpent,
+        calculatedTimeSpentOnAsset,
+        condition: postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0)
       })}
       
       {/* Artlog-specific rendering */}
-      {(postType === 'artlog' || (timelapseVideoId && githubImageLink && hoursSpent > 0)) && (
+      {(postType === 'artlog' || (timelapseVideoId && githubImageLink && calculatedTimeSpentOnAsset > 0)) && (
         <div style={{ 
           border: '2px solid #ff6fa5', 
           borderRadius: '12px', 
@@ -499,20 +658,108 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
           )}
           
           {/* Time Display */}
-          {hoursSpent > 0 && (
+          {calculatedTimeSpentOnAsset > 0 && (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '8px',
               fontSize: '14px',
-              color: '#666'
+              color: '#666',
+              position: 'relative'
             }}>
               <span>⏱️</span>
-              <span>
-                {hoursSpent >= 1 ? `${Math.floor(hoursSpent)}h` : ''}
-                {hoursSpent % 1 > 0 ? `${Math.round((hoursSpent % 1) * 60)}m` : ''}
-                {hoursSpent < 1 ? `${Math.round(hoursSpent * 60)}m` : ''}
-              </span>
+              {isEditingTime ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="999"
+                    value={editHours}
+                    onChange={(e) => setEditHours(parseInt(e.target.value) || 0)}
+                    style={{
+                      width: '40px',
+                      padding: '2px 4px',
+                      border: '1px solid #ddd',
+                      borderRadius: '3px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <span>h</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={editMinutes}
+                    onChange={(e) => setEditMinutes(parseInt(e.target.value) || 0)}
+                    style={{
+                      width: '40px',
+                      padding: '2px 4px',
+                      border: '1px solid #ddd',
+                      borderRadius: '3px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <span>m</span>
+                  <button
+                    onClick={handleTimeUpdate}
+                    disabled={isSubmitting}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      backgroundColor: '#ff6fa5',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: isSubmitting ? 0.6 : 1
+                    }}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingTime(false)}
+                    disabled={isSubmitting}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      backgroundColor: '#ccc',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: isSubmitting ? 0.6 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>
+                    {`${Math.floor(calculatedTimeSpentOnAsset)}h${Math.round((calculatedTimeSpentOnAsset % 1) * 60)}m`}
+                  </span>
+                  {canEdit && (
+                    <button
+                      onClick={() => setIsEditingTime(true)}
+                      style={{
+                        padding: '2px 4px',
+                        fontSize: '10px',
+                        backgroundColor: 'transparent',
+                        color: '#ff6fa5',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.opacity = '1'}
+                      onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                    >
+                      ✏️
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

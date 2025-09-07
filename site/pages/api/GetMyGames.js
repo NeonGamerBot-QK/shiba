@@ -135,13 +135,14 @@ export default async function handler(req, res) {
           PostID: fields.PostID || '',
           GameThumbnail: gameThumbnail,
           badges: Array.isArray(fields.Badges) ? fields.Badges : [],
-          postType: fields.PostType || 'devlog',
+          postType: (fields.Timelapse && fields['Link to Github Asset'] && fields.TimeSpentOnAsset) ? 'artlog' : 'devlog',
           timelapseVideoId: fields.Timelapse || '',
           githubImageLink: fields['Link to Github Asset'] || '',
           timeScreenshotId: fields.TimeScreenshotFile || '',
           HoursSpent: calculatedHoursSpent, // Provide decimal hours for PostAttachmentRenderer (e.g., 0.72 for 43 minutes)
           hoursSpent: hoursSpent,
           minutesSpent: minutesSpent,
+          timeSpentOnAsset: fields.TimeSpentOnAsset || 0,
           posterShomatoSeeds: fields.PosterShomatoSeeds || 0,
         };
       });

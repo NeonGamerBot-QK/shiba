@@ -268,12 +268,13 @@ async function fetchPostsForGame(gameId) {
       return [...airtableAttachments, ...s3Attachments];
     })(),
     badges: Array.isArray(rec.fields?.Badges) ? rec.fields.Badges : [],
-    postType: rec.fields?.PostType || 'devlog',
+    postType: (rec.fields?.Timelapse && rec.fields?.['Link to Github Asset'] && rec.fields?.TimeSpentOnAsset) ? 'artlog' : 'devlog',
     timelapseVideoId: rec.fields?.Timelapse || '',
     githubImageLink: rec.fields?.['Link to Github Asset'] || '',
     timeScreenshotId: rec.fields?.TimeScreenshotFile || '',
     hoursSpent: rec.fields?.HoursSpent || 0,
     minutesSpent: 0,
+    timeSpentOnAsset: rec.fields?.TimeSpentOnAsset || 0,
   }));
 }
 

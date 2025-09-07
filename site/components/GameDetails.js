@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function GameDetails({ game }) {
+export default function GameDetails({ game, subtitleTextWhite = false }) {
   const [rotated, setRotated] = useState(true);
   const [bounce, setBounce] = useState(false);
   const prevNameRef = useRef(game?.name);
@@ -70,7 +70,11 @@ export default function GameDetails({ game }) {
       }}
     >
       <p style={titleStyle}>{game.name}</p>
-      <p style={{ fontSize: 18, opacity: 0.5 }}>{game.description}</p>
+      <p style={{ 
+        fontSize: 18, 
+        opacity: 0.5,
+        color: subtitleTextWhite ? '#ffffff' : 'inherit'
+      }}>{game.description}</p>
     </div>
   );
 }

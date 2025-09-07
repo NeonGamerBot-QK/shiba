@@ -113,6 +113,7 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
                 timeScreenshotId: p.timeScreenshotId || '',
                 hoursSpent: p.hoursSpent || 0,
                 minutesSpent: p.minutesSpent || 0,
+                timeSpentOnAsset: p.timeSpentOnAsset || 0,
                 posterShomatoSeeds: p.posterShomatoSeeds || 0,
               }))
             : [];
@@ -290,6 +291,7 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
                     githubImageLink={p.githubImageLink}
                     timeScreenshotId={p.timeScreenshotId}
                     hoursSpent={p.hoursSpent}
+                    timeSpentOnAsset={p.timeSpentOnAsset}
                     minutesSpent={p.minutesSpent}
                     postId={p.postId}
                   />

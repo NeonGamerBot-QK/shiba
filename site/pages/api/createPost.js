@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       if (timeScreenshotId && timeScreenshotId.trim() !== '') {
         fields.TimeScreenshotFile = [{ url: timeScreenshotId }];
       }
-      fields.HoursSpent = parseFloat(hoursSpent) + (parseFloat(minutesSpent) / 60);
+      fields.TimeSpentOnAsset = parseFloat(hoursSpent) + (parseFloat(minutesSpent) / 60);
     }
 
     if (typeof playLink === 'string' && playLink.trim().length > 0) {
@@ -157,11 +157,12 @@ export default async function handler(req, res) {
           PostID: latest.fields?.PostID || postId,
           createdAt: latest.fields?.['Created At'] || latest.createdTime || new Date().toISOString(),
           PlayLink: typeof latest.fields?.PlayLink === 'string' ? latest.fields.PlayLink : '',
-          postType: latest.fields?.PostType || 'devlog',
+          postType: (latest.fields?.Timelapse && latest.fields?.['Link to Github Asset'] && latest.fields?.TimeSpentOnAsset) ? 'artlog' : 'devlog',
                         timelapseVideoId: latest.fields?.Timelapse || '',
               githubImageLink: latest.fields?.['Link to Github Asset'] || '',
               timeScreenshotId: latest.fields?.TimeScreenshotFile?.[0]?.url || '',
-              hoursSpent: latest.fields?.HoursSpent || 0,
+              hoursSpent: postType === 'artlog' ? (latest.fields?.TimeSpentOnAsset || 0) : (latest.fields?.HoursSpent || 0),
+              timeSpentOnAsset: latest.fields?.TimeSpentOnAsset || 0,
               minutesSpent: 0,
           attachments: (() => {
             const airtableAttachments = Array.isArray(latest.fields?.Attachements)

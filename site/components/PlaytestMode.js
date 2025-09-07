@@ -431,7 +431,20 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                     githubImageLink={post.githubImageLink}
                     timeScreenshotId={post.timeScreenshotId}
                     hoursSpent={post.hoursSpent}
+                    timeSpentOnAsset={post.timeSpentOnAsset}
                     minutesSpent={post.minutesSpent}
+                    postId={post.PostID}
+                    currentUserProfile={profile}
+                    onTimeUpdated={(postId, newTime) => {
+                      // Update the local posts state
+                      setPosts(prevPosts => 
+                        prevPosts.map(p => 
+                          p.PostID === postId 
+                            ? { ...p, timeSpentOnAsset: newTime }
+                            : p
+                        )
+                      );
+                    }}
                   />
                 </div>
               ))}

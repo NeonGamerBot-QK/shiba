@@ -121,6 +121,7 @@ export default function MyGamesComponent({
   token,
   SlackId,
   onOpenProfile,
+  profile,
 }) {
   const [myGames, setMyGames] = useState([]);
   const [createGamePopupOpen, setCreateGamePopupOpen] = useState(false);
@@ -409,6 +410,7 @@ export default function MyGamesComponent({
                   }}
                   SlackId={SlackId}
                   onOpenProfile={onOpenProfile}
+                  profile={profile}
                 />
               </div>
             </div>
@@ -630,6 +632,7 @@ function DetailView({
   onUpdated,
   SlackId,
   onOpenProfile,
+  profile,
 }) {
   const [name, setName] = useState(game?.name || "");
   const [description, setDescription] = useState(game?.description || "");
@@ -2319,7 +2322,21 @@ function DetailView({
                     timeScreenshotId={p.timeScreenshotId}
                     HoursSpent={p.HoursSpent}
                     hoursSpent={p.hoursSpent}
+                    timeSpentOnAsset={p.timeSpentOnAsset}
                     minutesSpent={p.minutesSpent}
+                    postId={p.PostID}
+                    currentUserProfile={profile}
+                    onTimeUpdated={(postId, newTime) => {
+                      // Update the game's posts in the parent component
+                      onUpdated({
+                        ...game,
+                        posts: game.posts.map(post => 
+                          post.PostID === postId 
+                            ? { ...post, timeSpentOnAsset: newTime }
+                            : post
+                        )
+                      });
+                    }}
                   />
                 </div>
               ))}
