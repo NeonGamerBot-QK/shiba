@@ -161,7 +161,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
   return (
     <div className="start-screen">
       {/* we will add in later, but people will get confused.  */}
-      {/* <div style={{ position: "absolute", top: 0, right: 0, zIndex: 100 }}>
+      <div style={{ position: "absolute", top: 0, right: 0, zIndex: 100 }}>
         <div
           style={{
             margin: "20px",
@@ -199,7 +199,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
             Login
           </p>
         </div>
-      </div> */}
+      </div>
       <div
         className="opening"
         style={{
