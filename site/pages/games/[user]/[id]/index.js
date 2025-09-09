@@ -36,7 +36,7 @@ async function getCachedGamesData() {
     ? 'https://shiba.hackclub.com' 
     : 'http://localhost:3000';
   
-  const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50&build=true`);
+  const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=1000&build=true`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch games data: ${response.status}`);
