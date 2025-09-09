@@ -2,32 +2,40 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
+import fs from 'fs';
+import path from 'path';
 
 const PlayGameComponent = dynamic(() => import('@/components/utils/playGameComponent.js'), { ssr: false });
 const PostAttachmentRenderer = dynamic(() => import('@/components/utils/PostAttachmentRenderer'), { ssr: false });
 
-// Global cache that persists across build processes
-if (typeof global.gamesCache === 'undefined') {
-  global.gamesCache = null;
-  global.cacheTimestamp = 0;
-}
-const CACHE_DURATION = 900000; // 15 minutes in milliseconds
+// File-based cache for build time
+const CACHE_FILE = path.join(process.cwd(), '.next', 'games-cache.json');
+const CACHE_DURATION = 900000; // 15 minutes
 
-// Function to get cached games data
+// Function to get cached games data (file-based cache)
 async function getCachedGamesData() {
-  const now = Date.now();
-  
-  // Check if cache is still valid
-  if (global.gamesCache && (now - global.cacheTimestamp) < CACHE_DURATION) {
-    console.log('Using cached games data');
-    return global.gamesCache;
+  try {
+    // Try to read from file cache first
+    if (fs.existsSync(CACHE_FILE)) {
+      const stats = fs.statSync(CACHE_FILE);
+      const now = Date.now();
+      
+      if (now - stats.mtime.getTime() < CACHE_DURATION) {
+        const cachedData = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+        console.log(`Using file-cached games data (${cachedData.length} games)`);
+        return cachedData;
+      }
+    }
+  } catch (error) {
+    console.log('File cache read failed, fetching fresh data');
   }
   
   // Fetch fresh data
-  console.log('Fetching fresh games data from API');
+  console.log('Fetching fresh games data from API (build-time)');
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://shiba.hackclub.com' 
     : 'http://localhost:3000';
+  
   const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50&build=true`);
   
   if (!response.ok) {
@@ -36,11 +44,19 @@ async function getCachedGamesData() {
   
   const games = await response.json();
   
-  // Update global cache
-  global.gamesCache = games;
-  global.cacheTimestamp = now;
+  // Write to file cache
+  try {
+    // Ensure .next directory exists
+    const nextDir = path.dirname(CACHE_FILE);
+    if (!fs.existsSync(nextDir)) {
+      fs.mkdirSync(nextDir, { recursive: true });
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(games, null, 2));
+    console.log(`File-cached ${games.length} games`);
+  } catch (error) {
+    console.log('File cache write failed, but data fetched successfully');
+  }
   
-  console.log(`Cached ${games.length} games`);
   return games;
 }
 
@@ -618,9 +634,11 @@ export async function getStaticPaths() {
 
 export async function getStaticProps(context) {
   const { user, id } = context.params;
+  console.log(`[getStaticProps] Processing ${user}/${id}`);
 
   try {
     const games = await getCachedGamesData();
+    console.log(`[getStaticProps] Got ${games.length} games for ${user}/${id}`);
     
     // Find the specific game by user and id
     const gameData = games.find(game => 
