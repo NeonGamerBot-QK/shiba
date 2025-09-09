@@ -3,8 +3,42 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 
+// Simple in-memory cache for games data
+let gamesCache = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 900000; // 15 minutes in milliseconds
+
 const PlayGameComponent = dynamic(() => import('@/components/utils/playGameComponent.js'), { ssr: false });
 const PostAttachmentRenderer = dynamic(() => import('@/components/utils/PostAttachmentRenderer'), { ssr: false });
+
+// Function to get cached games data
+async function getCachedGamesData() {
+  const now = Date.now();
+  
+  // Check if cache is still valid
+  if (gamesCache && (now - cacheTimestamp) < CACHE_DURATION) {
+    console.log('Using cached games data');
+    return gamesCache;
+  }
+  
+  // Fetch fresh data
+  console.log('Fetching fresh games data from API');
+  const baseUrl = 'http://localhost:3000';
+  const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch games data: ${response.status}`);
+  }
+  
+  const games = await response.json();
+  
+  // Update cache
+  gamesCache = games;
+  cacheTimestamp = now;
+  
+  console.log(`Cached ${games.length} games`);
+  return games;
+}
 
 export default function GamesPage({ gameData, error }) {
   const router = useRouter();
@@ -159,7 +193,7 @@ export default function GamesPage({ gameData, error }) {
               fontSize: "14px"
             }}>
               <a 
-                href="https://shiba.hackclub.com/"
+                href="https://shiba.hackclub.com/games/list"
                 style={{
                   textDecoration: "none",
                   color: "inherit",
@@ -541,37 +575,65 @@ export default function GamesPage({ gameData, error }) {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getStaticPaths() {
+  try {
+    const games = await getCachedGamesData();
+    
+    // Generate paths for ALL games with full data
+    const paths = games
+      .filter((game) => {
+        return game && 
+               game.slackId && 
+               typeof game.slackId === 'string' && 
+               game.name && 
+               typeof game.name === 'string' &&
+               game.slackId.trim().length > 0 &&
+               game.name.trim().length > 0;
+      })
+      .map((game) => ({
+        params: {
+          user: game.slackId.trim(),
+          id: game.name.trim()
+        }
+      }));
+
+    console.log(`Pre-generated ${paths.length} static paths for games`);
+    return {
+      paths,
+      fallback: false // Don't generate on-demand since we pre-generated all paths
+    };
+  } catch (error) {
+    console.error('Error generating static paths:', error);
+    console.log('Falling back to empty paths - pages will be generated on-demand');
+    return {
+      paths: [],
+      fallback: 'blocking'
+    };
+  }
+}
+
+export async function getStaticProps(context) {
   const { user, id } = context.params;
 
   try {
-    // Get the host from the request
-    const protocol = context.req.headers['x-forwarded-proto'] || 'http';
-    const host = context.req.headers.host;
-    const baseUrl = `${protocol}://${host}`;
+    const games = await getCachedGamesData();
+    
+    // Find the specific game by user and id
+    const gameData = games.find(game => 
+      game.slackId === user && 
+      game.name === id
+    );
 
-    const response = await fetch(`${baseUrl}/api/gameStore/getGame`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        slackId: user,
-        gameName: id
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    if (!gameData) {
+      console.error(`Game not found: ${user}/${id}`);
       return {
         props: {
           gameData: null,
-          error: errorData.message || 'Game not found'
-        }
+          error: 'Game not found'
+        },
+        revalidate: 900
       };
     }
-
-    const gameData = await response.json();
 
     // Format the last updated date on the server to avoid hydration issues
     if (gameData && gameData.lastUpdated) {
@@ -582,11 +644,14 @@ export async function getServerSideProps(context) {
       });
     }
 
+    console.log(`Found game data for ${user}/${id}:`, gameData.name);
+
     return {
       props: {
         gameData,
         error: null
-      }
+      },
+      revalidate: 3600
     };
   } catch (error) {
     console.error('Error fetching game data:', error);
@@ -594,7 +659,8 @@ export async function getServerSideProps(context) {
       props: {
         gameData: null,
         error: 'Failed to load game data'
-      }
+      },
+      revalidate: 3600
     };
   }
 }

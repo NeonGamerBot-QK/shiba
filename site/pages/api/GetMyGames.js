@@ -5,6 +5,7 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || 'appg245A41MWc6Rej';
 const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
 const AIRTABLE_GAMES_TABLE = process.env.AIRTABLE_GAMES_TABLE || 'Games';
 const AIRTABLE_POSTS_TABLE = process.env.AIRTABLE_POSTS_TABLE || 'Posts';
+const AIRTABLE_CHALLENGES_TABLE = process.env.AIRTABLE_CHALLENGES_TABLE || 'Challenges';
 const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 
 export default async function handler(req, res) {
@@ -22,7 +23,8 @@ export default async function handler(req, res) {
   console.log('[GetMyGames] Table names:', {
     USERS: AIRTABLE_USERS_TABLE,
     GAMES: AIRTABLE_GAMES_TABLE,
-    POSTS: AIRTABLE_POSTS_TABLE
+    POSTS: AIRTABLE_POSTS_TABLE,
+    CHALLENGES: AIRTABLE_CHALLENGES_TABLE
   });
 
   try {
@@ -39,6 +41,11 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
+    // Fetch challenges for the user
+    console.log(`[GetMyGames] Fetching challenges for token: ${token}`);
+    const allChallenges = await fetchChallengesForUser(token);
+    console.log(`[GetMyGames] Number of challenges found: ${allChallenges?.length || 0}`);
+
     
     const games = await Promise.all(gameRecords.map(async (rec) => {
       const gameId = rec.id;
@@ -46,6 +53,12 @@ export default async function handler(req, res) {
       
       // Fetch posts for this specific game directly
       const posts = await fetchPostsForGame(gameId);
+      
+      // Filter challenges for this specific game
+      const gameChallenges = allChallenges.filter(challenge => 
+        Array.isArray(challenge.assignedGame) && 
+        challenge.assignedGame.includes(gameId)
+      );
       
       console.log(`[GetMyGames] Game "${gameName}" has ${posts.length} posts`);
       
@@ -167,6 +180,7 @@ export default async function handler(req, res) {
         numberComplete: rec.fields?.numberComplete || 0,
         Feedback: rec.fields?.Feedback || '',
         posts: transformedPosts,
+        challenges: gameChallenges,
       };
     }));
 
@@ -328,6 +342,69 @@ async function fetchPostsForGame(gameId) {
   }
 }
 
+async function fetchChallengesForUser(userToken) {
+  console.log('[GetMyGames] fetchChallengesForUser userToken:', userToken);
+  
+  try {
+    // First find the user by token to get their email
+    const user = await findUserByToken(userToken);
+    if (!user) {
+      console.log('[GetMyGames] No user found for token');
+      return [];
+    }
+    
+    const userEmail = user.fields?.Email;
+    if (!userEmail) {
+      console.log('[GetMyGames] No email found for user');
+      return [];
+    }
+    
+    console.log('[GetMyGames] Looking for challenges for email:', userEmail);
+    
+    // Fetch challenges where recipientEmail matches the user's email
+    const params = new URLSearchParams({
+      filterByFormula: `{recipientEmail} = "${safeEscapeFormulaString(userEmail)}"`,
+      pageSize: '100',
+    });
 
-
+    console.log('[GetMyGames] Challenges query params:', params.toString());
+    
+    const data = await airtableRequest(`${encodeURIComponent(AIRTABLE_CHALLENGES_TABLE)}?${params.toString()}`, {
+      method: 'GET',
+    });
+    
+    console.log('[GetMyGames] Challenges response:', data);
+    
+    if (data.records && data.records.length > 0) {
+      console.log(`[GetMyGames] Found ${data.records.length} challenges`);
+      
+      // Transform challenges to match the expected format
+      const transformedChallenges = data.records.map(rec => {
+        const fields = rec.fields || {};
+        const challengeObj = {
+          id: rec.id,
+          airtableId: rec.id, // Include the Airtable record ID for API calls
+          challenge: fields.Challenge || '',
+          earnableSSS: fields['Earnable SSS'] || 0,
+          sssEarned: fields['SSS Earned'] || 0,
+          status: fields.Status || 'Not Submitted',
+          assignedGame: fields.AssignedGame || [],
+          fromPlaytest: fields.FromPlaytest || [],
+          recipientEmail: fields.recipientEmail || ''
+        };
+        console.log(`[GetMyGames] Challenge object created:`, challengeObj);
+        return challengeObj;
+      });
+      
+      return transformedChallenges;
+    }
+    
+    console.log('[GetMyGames] No challenges found for email:', userEmail);
+    return [];
+    
+  } catch (error) {
+    console.error('[GetMyGames] Error fetching challenges:', error);
+    return [];
+  }
+}
 

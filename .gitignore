@@ -10,6 +10,10 @@ node_modules/
 .next/
 out/
 
+./playtestScript/.env
+./playtestScript/venv
+./playtestScript/challenges.json
+
 # Env
 .env
 .env.*
