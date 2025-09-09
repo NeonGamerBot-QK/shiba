@@ -674,7 +674,7 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                     display: "block",
                     marginBottom: "0.5rem"
                   }}>
-                    Explain your answer *
+                    How can they improve {category}? Please be as specific as you can *
                   </label>
                   <textarea
                     value={ratingFeedback[category]}
@@ -682,7 +682,7 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                       ...prev,
                       [category]: e.target.value
                     }))}
-                    placeholder={`Explain why you gave ${category} a score of ${rating}...`}
+                    placeholder={`How can they improve ${category}? Please be as specific as you can...`}
                     required
                     style={{
                       width: "100%",
