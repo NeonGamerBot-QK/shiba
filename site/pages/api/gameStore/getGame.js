@@ -369,7 +369,7 @@ async function fetchPlaysForGame(gameName, creatorSlackId) {
   const playersWithProfiles = await Promise.all(
     uniquePlayerSlackIds.map(async (slackId) => {
       try {
-        const response = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}/r`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://shiba.hackclub.com'}/api/slackProfiles?slackId=${encodeURIComponent(slackId)}`);
         const profileData = await response.json().catch(() => ({}));
         
         return {

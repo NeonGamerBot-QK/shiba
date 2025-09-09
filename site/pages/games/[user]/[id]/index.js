@@ -74,9 +74,7 @@ export default function GamesPage({ gameData, error }) {
     const fetchSlack = async () => {
       if (!user) return;
       try {
-        const res = await fetch(
-          `https://cachet.dunkirk.sh/users/${encodeURIComponent(user)}/r`,
-        );
+        const res = await fetch(`/api/slackProfiles?slackId=${encodeURIComponent(user)}`);
         const json = await res.json().catch(() => ({}));
         if (!cancelled && json && (json.displayName || json.image)) {
           setSlackProfile({

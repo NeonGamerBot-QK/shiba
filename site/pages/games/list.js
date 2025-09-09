@@ -43,9 +43,7 @@ export default function GamesIndexPage({ games, error }) {
         for (const slackId of uniqueSlackIds) {
           if (!profiles[slackId]) {
             try {
-              const res = await fetch(
-                `https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}/r`,
-              );
+              const res = await fetch(`/api/slackProfiles?slackId=${encodeURIComponent(slackId)}`);
               const json = await res.json().catch(() => ({}));
               if (json && (json.displayName || json.image)) {
                 profiles[slackId] = {
