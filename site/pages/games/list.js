@@ -44,7 +44,7 @@ export default function GamesIndexPage({ games, error }) {
           if (!profiles[slackId]) {
             try {
               const res = await fetch(
-                `https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`,
+                `https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}/r`,
               );
               const json = await res.json().catch(() => ({}));
               if (json && (json.displayName || json.image)) {

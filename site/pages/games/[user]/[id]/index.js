@@ -75,7 +75,7 @@ export default function GamesPage({ gameData, error }) {
       if (!user) return;
       try {
         const res = await fetch(
-          `https://cachet.dunkirk.sh/users/${encodeURIComponent(user)}`,
+          `https://cachet.dunkirk.sh/users/${encodeURIComponent(user)}/r`,
         );
         const json = await res.json().catch(() => ({}));
         if (!cancelled && json && (json.displayName || json.image)) {

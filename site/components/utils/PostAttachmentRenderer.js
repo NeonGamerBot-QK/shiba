@@ -25,7 +25,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
     const load = async () => {
       if (!slackId) return;
       try {
-        const res = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`);
+        const res = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}/r`);
         const json = await res.json().catch(() => ({}));
         if (!cancelled && json && (json.displayName || json.image)) {
           setSlackProfile({ displayName: json.displayName || '', image: json.image || '' });

@@ -1628,7 +1628,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
       if (!SlackId) return;
       try {
         const res = await fetch(
-          `https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}`,
+          `https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}/r`,
         );
         const json = await res.json().catch(() => ({}));
         if (!cancelled && json && (json.displayName || json.image)) {

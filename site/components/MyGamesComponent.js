@@ -922,7 +922,7 @@ function DetailView({
       if (!SlackId) return;
       try {
         const res = await fetch(
-          `https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}`,
+          `https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}/r`,
         );
         const json = await res.json().catch(() => ({}));
         if (!cancelled && json && (json.displayName || json.image)) {
@@ -1564,7 +1564,7 @@ function DetailView({
           
           return (
             <div>
-              
+
             </div>
             // <div style={{ 
             //   marginBottom: 24,
