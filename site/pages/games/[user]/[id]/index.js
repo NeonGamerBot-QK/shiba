@@ -3,22 +3,24 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 
-// Simple in-memory cache for games data
-let gamesCache = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 900000; // 15 minutes in milliseconds
-
 const PlayGameComponent = dynamic(() => import('@/components/utils/playGameComponent.js'), { ssr: false });
 const PostAttachmentRenderer = dynamic(() => import('@/components/utils/PostAttachmentRenderer'), { ssr: false });
+
+// Global cache that persists across build processes
+if (typeof global.gamesCache === 'undefined') {
+  global.gamesCache = null;
+  global.cacheTimestamp = 0;
+}
+const CACHE_DURATION = 900000; // 15 minutes in milliseconds
 
 // Function to get cached games data
 async function getCachedGamesData() {
   const now = Date.now();
   
   // Check if cache is still valid
-  if (gamesCache && (now - cacheTimestamp) < CACHE_DURATION) {
+  if (global.gamesCache && (now - global.cacheTimestamp) < CACHE_DURATION) {
     console.log('Using cached games data');
-    return gamesCache;
+    return global.gamesCache;
   }
   
   // Fetch fresh data
@@ -26,7 +28,7 @@ async function getCachedGamesData() {
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://shiba.hackclub.com' 
     : 'http://localhost:3000';
-  const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50`);
+  const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50&build=true`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch games data: ${response.status}`);
@@ -34,9 +36,9 @@ async function getCachedGamesData() {
   
   const games = await response.json();
   
-  // Update cache
-  gamesCache = games;
-  cacheTimestamp = now;
+  // Update global cache
+  global.gamesCache = games;
+  global.cacheTimestamp = now;
   
   console.log(`Cached ${games.length} games`);
   return games;

@@ -8,10 +8,10 @@ const AIRTABLE_POSTS_TABLE = process.env.AIRTABLE_POSTS_TABLE || 'Posts';
 const AIRTABLE_PLAYS_TABLE = process.env.AIRTABLE_PLAYS_TABLE || 'Plays';
 const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 
-// Rate limiting (same as getGame.js)
+// Rate limiting (more lenient for build processes)
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute per IP
+const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute per IP (increased for build)
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -23,24 +23,29 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Server configuration error' });
   }
 
-  // Rate limiting (same as getGame.js)
+  // Rate limiting (bypass for build processes)
   const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-  const now = Date.now();
-  const windowStart = now - RATE_LIMIT_WINDOW;
+  const userAgent = req.headers['user-agent'] || '';
+  const isBuildProcess = userAgent.includes('vercel') || userAgent.includes('next') || req.query?.build === 'true';
   
-  if (!rateLimitMap.has(clientIP)) {
-    rateLimitMap.set(clientIP, []);
+  if (!isBuildProcess) {
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW;
+    
+    if (!rateLimitMap.has(clientIP)) {
+      rateLimitMap.set(clientIP, []);
+    }
+    
+    const requests = rateLimitMap.get(clientIP);
+    const recentRequests = requests.filter(timestamp => timestamp > windowStart);
+    
+    if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
+      return res.status(429).json({ message: 'Rate limit exceeded. Please try again later.' });
+    }
+    
+    recentRequests.push(now);
+    rateLimitMap.set(clientIP, recentRequests);
   }
-  
-  const requests = rateLimitMap.get(clientIP);
-  const recentRequests = requests.filter(timestamp => timestamp > windowStart);
-  
-  if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
-    return res.status(429).json({ message: 'Rate limit exceeded. Please try again later.' });
-  }
-  
-  recentRequests.push(now);
-  rateLimitMap.set(clientIP, recentRequests);
 
   try {
     // Input validation and sanitization
