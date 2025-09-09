@@ -261,24 +261,17 @@ export async function getServerSideProps() {
     };
 
     let allReviewRecords = [];
-    let reviewOffset = null;
 
     // Fetch all records from Active YSWS Record table (100 at a time)
-    do {
-      const params = {
+    await base('Active YSWS Record')
+      .select({
         pageSize: 100,
         fields: ['ReviewStatus']
-      };
-
-      if (reviewOffset) {
-        params.offset = reviewOffset;
-      }
-
-      const response = await base('Active YSWS Record').select(params).firstPage();
-      
-      allReviewRecords = allReviewRecords.concat(response);
-      reviewOffset = response.offset;
-    } while (reviewOffset);
+      })
+      .eachPage((records, fetchNextPage) => {
+        allReviewRecords = allReviewRecords.concat(records);
+        fetchNextPage();
+      });
 
     // Count ReviewStatus values
     allReviewRecords.forEach(record => {

@@ -15,24 +15,17 @@ export default async function handler(req, res) {
     };
 
     let allRecords = [];
-    let offset = null;
 
     // Fetch all records from Active YSWS Record table (100 at a time)
-    do {
-      const params = {
+    await base('Active YSWS Record')
+      .select({
         pageSize: 100,
         fields: ['ReviewStatus']
-      };
-
-      if (offset) {
-        params.offset = offset;
-      }
-
-      const response = await base('Active YSWS Record').select(params).firstPage();
-      
-      allRecords = allRecords.concat(response);
-      offset = response.offset;
-    } while (offset);
+      })
+      .eachPage((records, fetchNextPage) => {
+        allRecords = allRecords.concat(records);
+        fetchNextPage();
+      });
 
     // Count ReviewStatus values
     allRecords.forEach(record => {
