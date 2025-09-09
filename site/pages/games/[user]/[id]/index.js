@@ -23,7 +23,9 @@ async function getCachedGamesData() {
   
   // Fetch fresh data
   console.log('Fetching fresh games data from API');
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://shiba.hackclub.com' 
+    : 'http://localhost:3000';
   const response = await fetch(`${baseUrl}/api/GetAllGames?full=true&limit=50`);
   
   if (!response.ok) {
