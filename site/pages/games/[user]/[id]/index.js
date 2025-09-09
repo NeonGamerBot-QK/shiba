@@ -76,7 +76,7 @@ export default function GamesPage({ gameData, error }) {
   // Helper function to group posts between LastReviewed and current moment
   const groupPostsByLastReviewed = (posts) => {
     if (!LastReviewed || !Array.isArray(posts) || posts.length === 0) {
-      return { recentPosts: posts, olderPosts: [] };
+      return { recentPosts: [], olderPosts: posts };
     }
 
     const lastReviewedDate = new Date(LastReviewed);
