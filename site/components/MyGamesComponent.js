@@ -1561,219 +1561,216 @@ function DetailView({
           if (gameChallenges.length === 0) return null;
           
           return (
-            <div>
-
-            </div>
-            // <div style={{ 
-            //   marginBottom: 24,
-            //   backgroundColor: "rgba(255, 255, 255, 0.75)",
-            //   borderRadius: 12,
-            //   padding: 20,
-            //   border: "1px solid rgba(0, 0, 0, 0.18)"
-            // }}>
-            //   <h3 style={{ 
-            //     fontSize: 16, 
-            //     fontWeight: "bold", 
-            //     marginBottom: 12,
-            //     color: "#333",
-            //     textAlign: "left"
-            //   }}>
-            //     Game Challenges ({gameChallenges.filter(c => c.status === "Pending").length}/{gameChallenges.length})
-            //   </h3>
-            //   <div style={{
-            //     display: "flex",
-            //     flexDirection: "column",
-            //     gap: "8px",
-            //     maxHeight: "800px",
-            //     overflowY: "auto"
-            //   }}>
-            //     {gameChallenges.map((challenge, index) => (
-            //       <div key={challenge.id || index} style={{
-            //         display: "flex",
-            //         alignItems: "flex-start",
-            //         gap: "12px",
-            //         padding: "12px",
-            //         backgroundColor: "rgba(255, 255, 255, 0.9)",
-            //         borderRadius: "8px",
-            //         border: "1px solid rgba(0, 0, 0, 0.1)",
-            //         fontSize: "13px"
-            //       }}>
-            //         {/* iOS-style circular checkbox on the left */}
-            //         <div style={{ flexShrink: 0, marginTop: "2px" }}>
-            //           {challenge.status === "Not Submitted" ? (
-            //             <button
-            //               onClick={async () => {
-            //                 // Toggle the challenge status between "Not Submitted" and "Pending"
-            //                 const updatedGames = myGames.map(g => {
-            //                   if (g.id === game.id) {
-            //                     return {
-            //                       ...g,
-            //                       challenges: g.challenges.map(c => 
-            //                         c.id === challenge.id 
-            //                           ? { ...c, status: c.status === "Not Submitted" ? "Pending" : "Not Submitted" }
-            //                           : c
-            //                       )
-            //                     };
-            //                   }
-            //                   return g;
-            //                 });
-            //                 setMyGames(updatedGames);
+            <div style={{ 
+              marginBottom: 24,
+              backgroundColor: "rgba(255, 255, 255, 0.75)",
+              borderRadius: 12,
+              padding: 20,
+              border: "1px solid rgba(0, 0, 0, 0.18)"
+            }}>
+              <h3 style={{ 
+                fontSize: 16, 
+                fontWeight: "bold", 
+                marginBottom: 12,
+                color: "#333",
+                textAlign: "left"
+              }}>
+                Game Challenges ({gameChallenges.filter(c => c.status === "Pending").length}/{gameChallenges.length})
+              </h3>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                maxHeight: "800px",
+                overflowY: "auto"
+              }}>
+                {gameChallenges.map((challenge, index) => (
+                  <div key={challenge.id || index} style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "12px",
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(0, 0, 0, 0.1)",
+                    fontSize: "13px"
+                  }}>
+                    {/* iOS-style circular checkbox on the left */}
+                    <div style={{ flexShrink: 0, marginTop: "2px" }}>
+                      {challenge.status === "Not Submitted" ? (
+                        <button
+                          onClick={async () => {
+                            // Toggle the challenge status between "Not Submitted" and "Pending"
+                            const updatedGames = myGames.map(g => {
+                              if (g.id === game.id) {
+                                return {
+                                  ...g,
+                                  challenges: g.challenges.map(c => 
+                                    c.id === challenge.id 
+                                      ? { ...c, status: c.status === "Not Submitted" ? "Pending" : "Not Submitted" }
+                                      : c
+                                  )
+                                };
+                              }
+                              return g;
+                            });
+                            setMyGames(updatedGames);
                             
-            //                 // Make API call to update the challenge status in Airtable
-            //                 try {
-            //                   const newStatus = challenge.status === "Not Submitted" ? "Pending" : "Not Submitted";
-            //                   console.log('Making API call with:', {
-            //                     token: token,
-            //                     challengeId: challenge.airtableId,
-            //                     status: newStatus,
-            //                     challenge: challenge,
-            //                     challengeKeys: Object.keys(challenge)
-            //                   });
+                            // Make API call to update the challenge status in Airtable
+                            try {
+                              const newStatus = challenge.status === "Not Submitted" ? "Pending" : "Not Submitted";
+                              console.log('Making API call with:', {
+                                token: token,
+                                challengeId: challenge.airtableId,
+                                status: newStatus,
+                                challenge: challenge,
+                                challengeKeys: Object.keys(challenge)
+                              });
                               
-            //                   const response = await fetch('/api/adjustGameChallenge', {
-            //                     method: 'POST',
-            //                     headers: {
-            //                       'Content-Type': 'application/json',
-            //                     },
-            //                     body: JSON.stringify({
-            //                       token: token,
-            //                       challengeId: challenge.airtableId,
-            //                       status: newStatus
-            //                     }),
-            //                   });
+                              const response = await fetch('/api/adjustGameChallenge', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  token: token,
+                                  challengeId: challenge.airtableId,
+                                  status: newStatus
+                                }),
+                              });
                               
-            //                   if (!response.ok) {
-            //                     console.error('Failed to update challenge status');
-            //                   }
-            //                 } catch (error) {
-            //                   console.error('Error updating challenge status:', error);
-            //                 }
-            //               }}
-            //               style={{
-            //                 appearance: "none",
-            //                 border: "2px solid #ccc",
-            //                 background: "white",
-            //                 borderRadius: "50%",
-            //                 width: "20px",
-            //                 height: "20px",
-            //                 cursor: "pointer",
-            //                 transition: "all 0.2s ease",
-            //                 display: "flex",
-            //                 alignItems: "center",
-            //                 justifyContent: "center",
-            //                 padding: 0
-            //               }}
-            //               onMouseEnter={(e) => {
-            //                 e.target.style.borderColor = "#999";
-            //                 e.target.style.transform = "scale(1.1)";
-            //               }}
-            //               onMouseLeave={(e) => {
-            //                 e.target.style.borderColor = "#ccc";
-            //                 e.target.style.transform = "scale(1)";
-            //               }}
-            //             />
-            //           ) : challenge.status === "Pending" ? (
-            //             <button
-            //               onClick={async () => {
-            //                 // Toggle the challenge status between "Not Submitted" and "Pending"
-            //                 const updatedGames = myGames.map(g => {
-            //                   if (g.id === game.id) {
-            //                     return {
-            //                       ...g,
-            //                       challenges: g.challenges.map(c => 
-            //                         c.id === challenge.id 
-            //                           ? { ...c, status: c.status === "Not Submitted" ? "Pending" : "Not Submitted" }
-            //                           : c
-            //                       )
-            //                     };
-            //                   }
-            //                   return g;
-            //                 });
-            //                 setMyGames(updatedGames);
+                              if (!response.ok) {
+                                console.error('Failed to update challenge status');
+                              }
+                            } catch (error) {
+                              console.error('Error updating challenge status:', error);
+                            }
+                          }}
+                          style={{
+                            appearance: "none",
+                            border: "2px solid #ccc",
+                            background: "white",
+                            borderRadius: "50%",
+                            width: "20px",
+                            height: "20px",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 0
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.borderColor = "#999";
+                            e.target.style.transform = "scale(1.1)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.borderColor = "#ccc";
+                            e.target.style.transform = "scale(1)";
+                          }}
+                        />
+                      ) : challenge.status === "Pending" ? (
+                        <button
+                          onClick={async () => {
+                            // Toggle the challenge status between "Not Submitted" and "Pending"
+                            const updatedGames = myGames.map(g => {
+                              if (g.id === game.id) {
+                                return {
+                                  ...g,
+                                  challenges: g.challenges.map(c => 
+                                    c.id === challenge.id 
+                                      ? { ...c, status: c.status === "Not Submitted" ? "Pending" : "Not Submitted" }
+                                      : c
+                                  )
+                                };
+                              }
+                              return g;
+                            });
+                            setMyGames(updatedGames);
                             
-            //                 // Make API call to update the challenge status in Airtable
-            //                 try {
-            //                   const newStatus = challenge.status === "Not Submitted" ? "Pending" : "Not Submitted";
-            //                   console.log('Making API call with:', {
-            //                     token: token,
-            //                     challengeId: challenge.airtableId,
-            //                     status: newStatus,
-            //                     challenge: challenge,
-            //                     challengeKeys: Object.keys(challenge)
-            //                   });
+                            // Make API call to update the challenge status in Airtable
+                            try {
+                              const newStatus = challenge.status === "Not Submitted" ? "Pending" : "Not Submitted";
+                              console.log('Making API call with:', {
+                                token: token,
+                                challengeId: challenge.airtableId,
+                                status: newStatus,
+                                challenge: challenge,
+                                challengeKeys: Object.keys(challenge)
+                              });
                               
-            //                   const response = await fetch('/api/adjustGameChallenge', {
-            //                     method: 'POST',
-            //                     headers: {
-            //                       'Content-Type': 'application/json',
-            //                     },
-            //                     body: JSON.stringify({
-            //                       token: token,
-            //                       challengeId: challenge.airtableId,
-            //                       status: newStatus
-            //                     }),
-            //                   });
+                              const response = await fetch('/api/adjustGameChallenge', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  token: token,
+                                  challengeId: challenge.airtableId,
+                                  status: newStatus
+                                }),
+                              });
                               
-            //                   if (!response.ok) {
-            //                     console.error('Failed to update challenge status');
-            //                   }
-            //                 } catch (error) {
-            //                   console.error('Error updating challenge status:', error);
-            //                 }
-            //               }}
-            //               style={{
-            //                 appearance: "none",
-            //                 border: "2px solid #6c757d",
-            //                 background: "#6c757d",
-            //                 borderRadius: "50%",
-            //                 width: "20px",
-            //                 height: "20px",
-            //                 display: "flex",
-            //                 alignItems: "center",
-            //                 justifyContent: "center",
-            //                 position: "relative",
-            //                 cursor: "pointer",
-            //                 padding: 0
-            //               }}
-            //             >
-            //               {/* Green checkmark in the center */}
-            //               <div
-            //                 style={{
-            //                   width: "4px",
-            //                   height: "4px",
-            //                   background: "#28a745",
-            //                   borderRadius: "50%"
-            //                 }}
-            //               />
-            //             </button>
-            //           ) : null}
-            //         </div>
+                              if (!response.ok) {
+                                console.error('Failed to update challenge status');
+                              }
+                            } catch (error) {
+                              console.error('Error updating challenge status:', error);
+                            }
+                          }}
+                          style={{
+                            appearance: "none",
+                            border: "2px solid #6c757d",
+                            background: "#6c757d",
+                            borderRadius: "50%",
+                            width: "20px",
+                            height: "20px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            position: "relative",
+                            cursor: "pointer",
+                            padding: 0
+                          }}
+                        >
+                          {/* Green checkmark in the center */}
+                          <div
+                            style={{
+                              width: "4px",
+                              height: "4px",
+                              background: "#28a745",
+                              borderRadius: "50%"
+                            }}
+                          />
+                        </button>
+                      ) : null}
+                    </div>
                     
-            //         {/* Challenge content on the right */}
-            //         <div style={{ flex: 1 }}>
-            //           <div style={{ 
-            //             fontWeight: "bold", 
-            //             marginBottom: "6px", 
-            //             color: challenge.status === "Pending" ? "#999" : "#333",
-            //             textDecoration: challenge.status === "Pending" ? "line-through" : "none"
-            //           }}>
-            //             {challenge.challenge}
-            //           </div>
-            //           <div style={{ 
-            //             display: "flex", 
-            //             gap: "16px", 
-            //             fontSize: "12px", 
-            //             color: challenge.status === "Pending" ? "#999" : "#666"
-            //           }}>
-            //             <span><strong>Earnable:</strong> {challenge.earnableSSS} SSS</span>
-            //             <span><strong>Earned:</strong> {challenge.sssEarned} SSS</span>
-            //             <span><strong>Status:</strong> {challenge.status}</span>
-            //           </div>
-            //         </div>
-            //       </div>
-            //     ))}
-            //   </div>
-            // </div>
+                    {/* Challenge content on the right */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontWeight: "bold", 
+                        marginBottom: "6px", 
+                        color: challenge.status === "Pending" ? "#999" : "#333",
+                        textDecoration: challenge.status === "Pending" ? "line-through" : "none"
+                      }}>
+                        {challenge.challenge}
+                      </div>
+                      <div style={{ 
+                        display: "flex", 
+                        gap: "16px", 
+                        fontSize: "12px", 
+                        color: challenge.status === "Pending" ? "#999" : "#666"
+                      }}>
+                        <span><strong>Earnable:</strong> {challenge.earnableSSS} SSS</span>
+                        <span><strong>Earned:</strong> {challenge.sssEarned} SSS</span>
+                        <span><strong>Status:</strong> {challenge.status}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           );
         })()}
         
