@@ -259,6 +259,7 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
                 gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: 16,
                 marginBottom: 20,
+                width: '100%',
               }}
             >
               {posts.slice(0, displayCount).map((p, idx) => (
@@ -270,31 +271,45 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
                     background: 'rgba(255,255,255,0.8)',
                     padding: 12,
                     position: 'relative',
+                    width: '100%',
+                    minWidth: 0, // Allow content to shrink
+                    overflow: 'hidden', // Prevent content from breaking layout
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
                 >
-                  <PostAttachmentRenderer
-                    content={p.content}
-                    attachments={p.attachments}
-                    playLink={p.PlayLink}
-                    gameName={p.gameName}
-                    thumbnailUrl={p.gameThumbnail || ''}
-                    slackId={p.slackId}
-                    createdAt={p.createdAt}
-                    token={token}
-                    badges={p.badges}
-                    gamePageUrl={`https://shiba.hackclub.com/games/${p.slackId}/${encodeURIComponent(p.gameName || '')}`}
-                    onPlayCreated={(play) => {
-                      console.log('Play created:', play);
-                    }}
-                    postType={p.postType}
-                    timelapseVideoId={p.timelapseVideoId}
-                    githubImageLink={p.githubImageLink}
-                    timeScreenshotId={p.timeScreenshotId}
-                    hoursSpent={p.hoursSpent}
-                    timeSpentOnAsset={p.timeSpentOnAsset}
-                    minutesSpent={p.minutesSpent}
-                    postId={p.postId}
-                  />
+                  <div style={{ 
+                    width: '100%', 
+                    minWidth: 0, 
+                    overflow: 'hidden',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <PostAttachmentRenderer
+                      content={p.content}
+                      attachments={p.attachments}
+                      playLink={p.PlayLink}
+                      gameName={p.gameName}
+                      thumbnailUrl={p.gameThumbnail || ''}
+                      slackId={p.slackId}
+                      createdAt={p.createdAt}
+                      token={token}
+                      badges={p.badges}
+                      gamePageUrl={`https://shiba.hackclub.com/games/${p.slackId}/${encodeURIComponent(p.gameName || '')}`}
+                      onPlayCreated={(play) => {
+                        console.log('Play created:', play);
+                      }}
+                      postType={p.postType}
+                      timelapseVideoId={p.timelapseVideoId}
+                      githubImageLink={p.githubImageLink}
+                      timeScreenshotId={p.timeScreenshotId}
+                      hoursSpent={p.hoursSpent}
+                      timeSpentOnAsset={p.timeSpentOnAsset}
+                      minutesSpent={p.minutesSpent}
+                      postId={p.postId}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -439,6 +454,28 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
             opacity: 0.6;
             transform: scale(1.1);
           }
+        }
+
+        /* Ensure strict 2-column layout */
+        .global-area :global(img) {
+          max-width: 100% !important;
+          height: auto !important;
+          object-fit: contain;
+        }
+
+        .global-area :global(video) {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+
+        .global-area :global(iframe) {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+
+        .global-area :global(*) {
+          max-width: 100% !important;
+          box-sizing: border-box;
         }
       `}</style>
     </div>

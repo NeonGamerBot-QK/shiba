@@ -2,74 +2,18 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 
 export default function GamesIndexPage({ games, error }) {
-  const [slackProfiles, setSlackProfiles] = useState({});
-  const [loadingProfiles, setLoadingProfiles] = useState(true);
-
+  // No longer need to fetch profiles since they're included in the games data
+  
+  // Debug: Log the first game to see what data we're getting
   useEffect(() => {
-    const fetchSlackProfiles = async () => {
-      if (!games || games.length === 0) return;
-      
-      try {
-        setLoadingProfiles(true);
-        const uniqueSlackIds = [...new Set(games.map(game => game['slack id']).filter(Boolean))];
-        const profiles = {};
-        
-        // Check localStorage cache first
-        const cachedProfiles = localStorage.getItem('slackProfilesCache');
-        const cacheTimestamp = localStorage.getItem('slackProfilesCacheTimestamp');
-        const now = Date.now();
-        const cacheAge = now - (parseInt(cacheTimestamp) || 0);
-        const cacheValid = cacheAge < (24 * 60 * 60 * 1000); // 24 hours in milliseconds
-        
-        if (cachedProfiles && cacheValid) {
-          try {
-            const parsedProfiles = JSON.parse(cachedProfiles);
-            // Only use cached profiles for the current games
-            for (const slackId of uniqueSlackIds) {
-              if (parsedProfiles[slackId]) {
-                profiles[slackId] = parsedProfiles[slackId];
-              }
-            }
-            setSlackProfiles(profiles);
-            setLoadingProfiles(false);
-            return; // Use cached data, no need to fetch
-          } catch (e) {
-            console.error('Error parsing cached profiles:', e);
-            // Fall through to fetch fresh data
-          }
-        }
-        
-        // Fetch fresh data for missing profiles
-        for (const slackId of uniqueSlackIds) {
-          if (!profiles[slackId]) {
-            try {
-              const res = await fetch(`/api/slackProfiles?slackId=${encodeURIComponent(slackId)}`);
-              const json = await res.json().catch(() => ({}));
-              if (json && (json.displayName || json.image)) {
-                profiles[slackId] = {
-                  displayName: json.displayName || '',
-                  image: json.image || '',
-                };
-              }
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        }
-        
-        // Cache the profiles for 24 hours
-        localStorage.setItem('slackProfilesCache', JSON.stringify(profiles));
-        localStorage.setItem('slackProfilesCacheTimestamp', now.toString());
-        
-        setSlackProfiles(profiles);
-      } catch (error) {
-        console.error('Error fetching Slack profiles:', error);
-      } finally {
-        setLoadingProfiles(false);
-      }
-    };
-
-    fetchSlackProfiles();
+    if (games && games.length > 0) {
+      console.log('First game data:', games[0]);
+      console.log('Creator fields:', {
+        creatorDisplayName: games[0].creatorDisplayName,
+        creatorImage: games[0].creatorImage,
+        slackId: games[0]['slack id']
+      });
+    }
   }, [games]);
 
   if (error) {
@@ -347,7 +291,6 @@ export default function GamesIndexPage({ games, error }) {
                     </h3>
                     
                     {game['slack id'] && (() => {
-                      const profile = slackProfiles[game['slack id']];
                       return (
                         <div style={{
                           position: 'absolute',
@@ -373,7 +316,7 @@ export default function GamesIndexPage({ games, error }) {
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
                               backgroundColor: '#fff',
-                              backgroundImage: profile?.image ? `url(${profile.image})` : 'none',
+                              backgroundImage: game.creatorImage ? `url(${game.creatorImage})` : 'none',
                             }}
                           />
                           <span style={{
@@ -382,7 +325,7 @@ export default function GamesIndexPage({ games, error }) {
                             textOverflow: 'ellipsis',
                             maxWidth: '120px'
                           }}>
-                            {loadingProfiles ? '...' : (profile?.displayName || game['slack id'])}
+                            {game.creatorDisplayName || game['slack id']}
                           </span>
                         </div>
                       );
@@ -442,10 +385,12 @@ export default function GamesIndexPage({ games, error }) {
 
 export async function getStaticProps() {
   try {
-    // Use absolute URL for static generation
-    const baseUrl = 'https://shiba.hackclub.com';
+    // Use localhost for development, production URL for build
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://shiba.hackclub.com' 
+      : 'http://localhost:3000';
     
-    const response = await fetch(`${baseUrl}/api/GetAllGames?limit=100`);
+    const response = await fetch(`${baseUrl}/api/GetAllGames?limit=100&build=true`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch games');

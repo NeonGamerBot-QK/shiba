@@ -5,7 +5,7 @@ import Head from 'next/head';
 import fs from 'fs';
 import path from 'path';
 
-const PlayGameComponent = dynamic(() => import('@/components/utils/playGameComponent.js'), { ssr: false });
+const PlayGameComponent = dynamic(() => import('@/components/utils/playGameComponent'), { ssr: false });
 const PostAttachmentRenderer = dynamic(() => import('@/components/utils/PostAttachmentRenderer'), { ssr: false });
 
 // File-based cache for build time
@@ -64,33 +64,14 @@ export default function GamesPage({ gameData, error }) {
   const router = useRouter();
   const { user, id } = router.query;
   const [loading, setLoading] = useState(false);
-  const [slackProfile, setSlackProfile] = useState(null);
   const [selectedView, setSelectedView] = useState('Devlogs'); // 'Devlogs' | 'Artlogs' | 'Plays'
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
 
-  // Fetch Slack displayName and image via cachet
-  useEffect(() => {
-    let cancelled = false;
-    const fetchSlack = async () => {
-      if (!user) return;
-      try {
-        const res = await fetch(`/api/slackProfiles?slackId=${encodeURIComponent(user)}`);
-        const json = await res.json().catch(() => ({}));
-        if (!cancelled && json && (json.displayName || json.image)) {
-          setSlackProfile({
-            displayName: json.displayName || '',
-            image: json.image || '',
-          });
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchSlack();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  // Use profile data from gameData instead of fetching separately
+  const slackProfile = gameData ? {
+    displayName: gameData.creatorDisplayName || '',
+    image: gameData.creatorImage || '',
+  } : null;
 
   if (error) {
     return (

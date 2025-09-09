@@ -114,6 +114,58 @@ export default async function handler(req, res) {
         usersById.set(user.id, user);
       });
       
+      // Fetch profile data for all unique game creators
+      const uniqueCreatorSlackIds = [...new Set(
+        allGames
+          .map(rec => {
+            const fields = rec.fields || {};
+            return Array.isArray(fields['slack id']) ? fields['slack id'][0] : fields['slack id'];
+          })
+          .filter(slackId => slackId && typeof slackId === 'string')
+      )];
+
+      console.log(`Fetching profile data for ${uniqueCreatorSlackIds.length} unique creators`);
+
+      // Fetch profile data for each creator
+      const creatorsWithProfiles = await Promise.all(
+        uniqueCreatorSlackIds.map(async (slackId) => {
+          try {
+            // During build time, we might need to call cachet directly
+            const isBuildTime = req.query?.build === 'true' || process.env.NODE_ENV === 'production';
+            let profileData = {};
+            
+            if (isBuildTime) {
+              // During build, call cachet directly to avoid self-referencing API calls
+              const response = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`);
+              profileData = await response.json().catch(() => ({}));
+            } else {
+              // During runtime, use our API
+              const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://shiba.hackclub.com'}/api/slackProfiles?slackId=${encodeURIComponent(slackId)}`);
+              profileData = await response.json().catch(() => ({}));
+            }
+            
+            return {
+              slackId,
+              displayName: profileData.displayName || '',
+              image: profileData.image || '',
+            };
+          } catch (error) {
+            console.error(`[GetAllGames] Error fetching profile for ${slackId}:`, error);
+            return {
+              slackId,
+              displayName: '',
+              image: '',
+            };
+          }
+        })
+      );
+
+      // Create lookup map for creator profiles
+      const creatorProfiles = new Map();
+      creatorsWithProfiles.forEach(creator => {
+        creatorProfiles.set(creator.slackId, creator);
+      });
+
       // Now process games with the bulk data
       const gamesWithFullData = allGames.map((rec) => {
         const fields = rec.fields || {};
@@ -131,6 +183,9 @@ export default async function handler(req, res) {
         // Get plays for this game
         const gamePlays = playsByGameId.get(rec.id) || [];
         const plays = gamePlays.map(play => transformPlay(play, usersById));
+
+        // Get creator profile data
+        const creatorProfile = creatorProfiles.get(slackId) || { displayName: '', image: '' };
 
         return {
           id: rec.id,
@@ -161,6 +216,8 @@ export default async function handler(req, res) {
           playsCount: plays.length,
           slackId,
           ShibaLink: fields.ShibaLink || '',
+          creatorDisplayName: creatorProfile.displayName,
+          creatorImage: creatorProfile.image,
         };
       });
 
@@ -169,18 +226,73 @@ export default async function handler(req, res) {
       console.log(`Returning ${validGames.length} games with full data`);
       return res.status(200).json(validGames);
     } else {
-      // For basic data, just return the simple format
+      // For basic data, fetch creator profiles and return the simple format
+      const uniqueCreatorSlackIds = [...new Set(
+        allGames
+          .map(rec => {
+            const fields = rec.fields || {};
+            return Array.isArray(fields['slack id']) ? fields['slack id'][0] : fields['slack id'];
+          })
+          .filter(slackId => slackId && typeof slackId === 'string')
+      )];
+
+      console.log(`Fetching profile data for ${uniqueCreatorSlackIds.length} unique creators (basic mode)`);
+
+      // Fetch profile data for each creator
+      const creatorsWithProfiles = await Promise.all(
+        uniqueCreatorSlackIds.map(async (slackId) => {
+          try {
+            // During build time, we might need to call cachet directly
+            const isBuildTime = req.query?.build === 'true' || process.env.NODE_ENV === 'production';
+            let profileData = {};
+            
+            if (isBuildTime) {
+              // During build, call cachet directly to avoid self-referencing API calls
+              const response = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(slackId)}`);
+              profileData = await response.json().catch(() => ({}));
+            } else {
+              // During runtime, use our API
+              const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://shiba.hackclub.com'}/api/slackProfiles?slackId=${encodeURIComponent(slackId)}`);
+              profileData = await response.json().catch(() => ({}));
+            }
+            
+            return {
+              slackId,
+              displayName: profileData.displayName || '',
+              image: profileData.image || '',
+            };
+          } catch (error) {
+            console.error(`[GetAllGames] Error fetching profile for ${slackId}:`, error);
+            return {
+              slackId,
+              displayName: '',
+              image: '',
+            };
+          }
+        })
+      );
+
+      // Create lookup map for creator profiles
+      const creatorProfiles = new Map();
+      creatorsWithProfiles.forEach(creator => {
+        creatorProfiles.set(creator.slackId, creator);
+      });
+
       const games = allGames.map((rec) => {
         const fields = rec.fields || {};
+        const slackId = Array.isArray(fields['slack id']) ? fields['slack id'][0] : fields['slack id'];
+        const creatorProfile = creatorProfiles.get(slackId) || { displayName: '', image: '' };
         
         return {
           id: rec.id,
           Name: fields.Name || '',
           Description: fields.Description || '',
           Thumbnail: Array.isArray(fields.Thumbnail) && fields.Thumbnail[0]?.url ? fields.Thumbnail[0].url : '',
-          'slack id': fields['slack id'] || '',
+          'slack id': slackId || '',
           'Last Updated': fields['Last Updated'] || '',
           ShibaLink: fields.ShibaLink || '',
+          creatorDisplayName: creatorProfile.displayName,
+          creatorImage: creatorProfile.image,
         };
       });
 
