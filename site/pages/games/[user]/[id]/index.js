@@ -62,7 +62,7 @@ async function getCachedGamesData() {
 
 export default function GamesPage({ gameData, error }) {
   const router = useRouter();
-  const { user, id } = router.query;
+  const { user, id, LastReviewed } = router.query;
   const [loading, setLoading] = useState(false);
   const [selectedView, setSelectedView] = useState('Devlogs'); // 'Devlogs' | 'Artlogs' | 'Plays'
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
@@ -72,6 +72,39 @@ export default function GamesPage({ gameData, error }) {
     displayName: gameData.creatorDisplayName || '',
     image: gameData.creatorImage || '',
   } : null;
+
+  // Helper function to group posts between LastReviewed and current moment
+  const groupPostsByLastReviewed = (posts) => {
+    if (!LastReviewed || !Array.isArray(posts) || posts.length === 0) {
+      return { recentPosts: posts, olderPosts: [] };
+    }
+
+    const lastReviewedDate = new Date(LastReviewed);
+    const recentPosts = [];
+    const olderPosts = [];
+
+    posts.forEach(post => {
+      const postDate = new Date(post.createdAt);
+      if (postDate > lastReviewedDate) {
+        recentPosts.push(post);
+      } else {
+        olderPosts.push(post);
+      }
+    });
+
+    return { recentPosts, olderPosts };
+  };
+
+  // Calculate total time spent for posts
+  const calculateTotalTimeSpent = (posts, isArtlog = false) => {
+    return posts.reduce((total, post) => {
+      if (isArtlog) {
+        return total + (post.timeSpentOnAsset || 0);
+      } else {
+        return total + (post.hoursSpent || post.HoursSpent || 0);
+      }
+    }, 0);
+  };
 
   if (error) {
     return (
@@ -385,43 +418,109 @@ export default function GamesPage({ gameData, error }) {
             <>
               {Array.isArray(gameData?.posts) && gameData.posts.length > 0 ? (() => {
                 const devlogPosts = gameData.posts.filter(post => post.postType !== 'artlog');
+                const { recentPosts, olderPosts } = groupPostsByLastReviewed(devlogPosts);
+                const recentTimeSpent = calculateTotalTimeSpent(recentPosts, false);
+                
                 return devlogPosts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: "32px" }}>
-                    {devlogPosts.map((p, pIdx) => (
-                    <div key={p.id || pIdx} className="moment-card" style={{ 
-                      position: "relative",
-                      border: "1px solid rgba(0, 0, 0, 0.18)",
-                      borderRadius: "10px",
-                      background: "rgba(255, 255, 255, 0.8)",
-                      padding: "12px"
-                    }}>
-                      <PostAttachmentRenderer
-                        content={p.content}
-                        attachments={p.attachments}
-                        playLink={p.PlayLink}
-                        gameName={gameData?.name || ""}
-                        thumbnailUrl={gameData?.thumbnailUrl || ""}
-                        token={null}
-                        slackId={user}
-                        createdAt={p.createdAt}
-                        badges={p.badges}
-                        HoursSpent={p.HoursSpent}
-                        gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
-                        onPlayCreated={(play) => {
-                          console.log("Play created:", play);
-                        }}
-                        postType={p.postType}
-                        timelapseVideoId={p.timelapseVideoId}
-                        githubImageLink={p.githubImageLink}
-                        timeScreenshotId={p.timeScreenshotId}
-                        hoursSpent={p.hoursSpent || p.HoursSpent || 0}
-                        timeSpentOnAsset={p.timeSpentOnAsset || 0}
-                        minutesSpent={p.minutesSpent}
-                        postId={p.PostID}
-                        currentUserProfile={null}
-                        onTimeUpdated={() => {}} // No-op for public pages
-                      />
-                    </div>
+                    {/* Recent posts (since LastReviewed) */}
+                    {recentPosts.length > 0 && (
+                      <div style={{
+                        border: "2px solid #ff0000",
+                        borderRadius: "10px",
+                        padding: "16px",
+                        backgroundColor: "rgba(255, 0, 0, 0.05)",
+                        marginBottom: "16px"
+                      }}>
+                        <div style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#ff0000",
+                          marginBottom: "12px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                          <span>New since last review</span>
+                          <span>{recentTimeSpent.toFixed(2)} hours</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                          {recentPosts.map((p, pIdx) => (
+                            <div key={p.id || pIdx} className="moment-card" style={{ 
+                              position: "relative",
+                              border: "2px solid #ff0000",
+                              borderRadius: "10px",
+                              background: "rgba(255, 255, 255, 0.9)",
+                              padding: "12px"
+                            }}>
+                              <PostAttachmentRenderer
+                                content={p.content}
+                                attachments={p.attachments}
+                                playLink={p.PlayLink}
+                                gameName={gameData?.name || ""}
+                                thumbnailUrl={gameData?.thumbnailUrl || ""}
+                                token={null}
+                                slackId={user}
+                                createdAt={p.createdAt}
+                                badges={p.badges}
+                                HoursSpent={p.HoursSpent}
+                                gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
+                                onPlayCreated={(play) => {
+                                  console.log("Play created:", play);
+                                }}
+                                postType={p.postType}
+                                timelapseVideoId={p.timelapseVideoId}
+                                githubImageLink={p.githubImageLink}
+                                timeScreenshotId={p.timeScreenshotId}
+                                hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                                timeSpentOnAsset={p.timeSpentOnAsset || 0}
+                                minutesSpent={p.minutesSpent}
+                                postId={p.PostID}
+                                currentUserProfile={null}
+                                onTimeUpdated={() => {}} // No-op for public pages
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Older posts */}
+                    {olderPosts.map((p, pIdx) => (
+                      <div key={p.id || pIdx} className="moment-card" style={{ 
+                        position: "relative",
+                        border: "1px solid rgba(0, 0, 0, 0.18)",
+                        borderRadius: "10px",
+                        background: "rgba(255, 255, 255, 0.8)",
+                        padding: "12px"
+                      }}>
+                        <PostAttachmentRenderer
+                          content={p.content}
+                          attachments={p.attachments}
+                          playLink={p.PlayLink}
+                          gameName={gameData?.name || ""}
+                          thumbnailUrl={gameData?.thumbnailUrl || ""}
+                          token={null}
+                          slackId={user}
+                          createdAt={p.createdAt}
+                          badges={p.badges}
+                          HoursSpent={p.HoursSpent}
+                          gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
+                          onPlayCreated={(play) => {
+                            console.log("Play created:", play);
+                          }}
+                          postType={p.postType}
+                          timelapseVideoId={p.timelapseVideoId}
+                          githubImageLink={p.githubImageLink}
+                          timeScreenshotId={p.timeScreenshotId}
+                          hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                          timeSpentOnAsset={p.timeSpentOnAsset || 0}
+                          minutesSpent={p.minutesSpent}
+                          postId={p.PostID}
+                          currentUserProfile={null}
+                          onTimeUpdated={() => {}} // No-op for public pages
+                        />
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -442,43 +541,109 @@ export default function GamesPage({ gameData, error }) {
             <>
               {Array.isArray(gameData?.posts) && gameData.posts.length > 0 ? (() => {
                 const artlogPosts = gameData.posts.filter(post => post.postType === 'artlog');
+                const { recentPosts, olderPosts } = groupPostsByLastReviewed(artlogPosts);
+                const recentTimeSpent = calculateTotalTimeSpent(recentPosts, true);
+                
                 return artlogPosts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: "32px" }}>
-                    {artlogPosts.map((p, pIdx) => (
-                    <div key={p.id || pIdx} className="moment-card" style={{ 
-                      position: "relative",
-                      border: "1px solid rgba(0, 0, 0, 0.18)",
-                      borderRadius: "10px",
-                      background: "rgba(255, 255, 255, 0.8)",
-                      padding: "12px"
-                    }}>
-                      <PostAttachmentRenderer
-                        content={p.content}
-                        attachments={p.attachments}
-                        playLink={p.PlayLink}
-                        gameName={gameData?.name || ""}
-                        thumbnailUrl={gameData?.thumbnailUrl || ""}
-                        token={null}
-                        slackId={user}
-                        createdAt={p.createdAt}
-                        badges={p.badges}
-                        HoursSpent={p.HoursSpent}
-                        gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
-                        onPlayCreated={(play) => {
-                          console.log("Play created:", play);
-                        }}
-                        postType={p.postType}
-                        timelapseVideoId={p.timelapseVideoId}
-                        githubImageLink={p.githubImageLink}
-                        timeScreenshotId={p.timeScreenshotId}
-                        hoursSpent={p.hoursSpent || p.HoursSpent || 0}
-                        timeSpentOnAsset={p.timeSpentOnAsset || 0}
-                        minutesSpent={p.minutesSpent}
-                        postId={p.PostID}
-                        currentUserProfile={null}
-                        onTimeUpdated={() => {}} // No-op for public pages
-                      />
-                    </div>
+                    {/* Recent posts (since LastReviewed) */}
+                    {recentPosts.length > 0 && (
+                      <div style={{
+                        border: "2px solid #ff0000",
+                        borderRadius: "10px",
+                        padding: "16px",
+                        backgroundColor: "rgba(255, 0, 0, 0.05)",
+                        marginBottom: "16px"
+                      }}>
+                        <div style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#ff0000",
+                          marginBottom: "12px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                          <span>New since last review</span>
+                          <span>{recentTimeSpent.toFixed(2)} hours</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                          {recentPosts.map((p, pIdx) => (
+                            <div key={p.id || pIdx} className="moment-card" style={{ 
+                              position: "relative",
+                              border: "2px solid #ff0000",
+                              borderRadius: "10px",
+                              background: "rgba(255, 255, 255, 0.9)",
+                              padding: "12px"
+                            }}>
+                              <PostAttachmentRenderer
+                                content={p.content}
+                                attachments={p.attachments}
+                                playLink={p.PlayLink}
+                                gameName={gameData?.name || ""}
+                                thumbnailUrl={gameData?.thumbnailUrl || ""}
+                                token={null}
+                                slackId={user}
+                                createdAt={p.createdAt}
+                                badges={p.badges}
+                                HoursSpent={p.HoursSpent}
+                                gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
+                                onPlayCreated={(play) => {
+                                  console.log("Play created:", play);
+                                }}
+                                postType={p.postType}
+                                timelapseVideoId={p.timelapseVideoId}
+                                githubImageLink={p.githubImageLink}
+                                timeScreenshotId={p.timeScreenshotId}
+                                hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                                timeSpentOnAsset={p.timeSpentOnAsset || 0}
+                                minutesSpent={p.minutesSpent}
+                                postId={p.PostID}
+                                currentUserProfile={null}
+                                onTimeUpdated={() => {}} // No-op for public pages
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Older posts */}
+                    {olderPosts.map((p, pIdx) => (
+                      <div key={p.id || pIdx} className="moment-card" style={{ 
+                        position: "relative",
+                        border: "1px solid rgba(0, 0, 0, 0.18)",
+                        borderRadius: "10px",
+                        background: "rgba(255, 255, 255, 0.8)",
+                        padding: "12px"
+                      }}>
+                        <PostAttachmentRenderer
+                          content={p.content}
+                          attachments={p.attachments}
+                          playLink={p.PlayLink}
+                          gameName={gameData?.name || ""}
+                          thumbnailUrl={gameData?.thumbnailUrl || ""}
+                          token={null}
+                          slackId={user}
+                          createdAt={p.createdAt}
+                          badges={p.badges}
+                          HoursSpent={p.HoursSpent}
+                          gamePageUrl={`https://shiba.hackclub.com/games/${user}/${encodeURIComponent(gameData?.name || id)}`}
+                          onPlayCreated={(play) => {
+                            console.log("Play created:", play);
+                          }}
+                          postType={p.postType}
+                          timelapseVideoId={p.timelapseVideoId}
+                          githubImageLink={p.githubImageLink}
+                          timeScreenshotId={p.timeScreenshotId}
+                          hoursSpent={p.hoursSpent || p.HoursSpent || 0}
+                          timeSpentOnAsset={p.timeSpentOnAsset || 0}
+                          minutesSpent={p.minutesSpent}
+                          postId={p.PostID}
+                          currentUserProfile={null}
+                          onTimeUpdated={() => {}} // No-op for public pages
+                        />
+                      </div>
                     ))}
                   </div>
                 ) : (
