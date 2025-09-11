@@ -513,8 +513,11 @@ async function testDaysActiveFunctionality(slackId) {
     const spansData = await fetchHackatimeSpans(slackId);
     console.log(`⏱️ Found spans for ${Object.keys(spansData).length} projects`);
     
-    // Format the daysActive string
-    const daysActiveString = formatDaysActiveString(hackatimeData, spansData);
+    // Get user's games to get Shiba project names
+    const userGames = await fetchGamesForUser(slackId);
+    
+    // Format the daysActive string (Shiba projects only)
+    const daysActiveString = formatDaysActiveString(hackatimeData, spansData, userGames);
     console.log(`📅 Formatted daysActive string: "${daysActiveString}"`);
     
     // Find the user in Airtable
@@ -545,18 +548,45 @@ async function testDaysActiveFunctionality(slackId) {
   }
 }
 
-// Helper function to format daysActive string (copied from main file)
-function formatDaysActiveString(hackatimeData, spansData) {
+// Helper function to format daysActive string (Shiba projects only)
+function formatDaysActiveString(hackatimeData, spansData, userGames) {
   if (!hackatimeData || !hackatimeData.projects || hackatimeData.projects.length === 0) {
     return '';
   }
 
-  // Group spans by date and sum hours
+  // Get all Shiba project names from user's games
+  const shibaProjectNames = new Set();
+  userGames.forEach(game => {
+    const projects = game.fields?.['Hackatime Projects'];
+    if (projects) {
+      const projectNames = Array.isArray(projects) 
+        ? projects.filter(Boolean)
+        : (typeof projects === 'string' ? projects.split(',').map(p => p.trim()) : []);
+      
+      projectNames.forEach(projectName => {
+        if (projectName) {
+          shibaProjectNames.add(projectName.toLowerCase());
+        }
+      });
+    }
+  });
+
+  // If no Shiba projects found, return empty string
+  if (shibaProjectNames.size === 0) {
+    return '';
+  }
+
+  // Group spans by date and sum hours (Shiba projects only)
   const dailyHours = {};
   
-  // Process all spans from all projects
+  // Process spans only from Shiba projects
   for (const project of hackatimeData.projects) {
     if (!project.name || !spansData[project.name]) continue;
+    
+    // Only include projects that are linked to Shiba games
+    if (!shibaProjectNames.has(project.name.toLowerCase())) {
+      continue;
+    }
     
     const projectSpans = spansData[project.name];
     

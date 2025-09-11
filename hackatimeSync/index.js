@@ -305,6 +305,7 @@ async function fetchAllUsers() {
   return allRecords;
 }
 
+
 // Hackatime API integration with better error handling
 async function fetchHackatimeData(slackId) {
   if (!slackId) throw new Error('Missing slackId');
@@ -606,18 +607,45 @@ function calculateHoursFromSpans(spansData, projectNames, startTime, endTime) {
   return totalSeconds / 3600; // Convert to hours
 }
 
-// Function to format Hackatime data into daysActive string format
-function formatDaysActiveString(hackatimeData, spansData) {
+// Function to format Hackatime data into daysActive string format (Shiba projects only)
+function formatDaysActiveString(hackatimeData, spansData, userGames) {
   if (!hackatimeData || !hackatimeData.projects || hackatimeData.projects.length === 0) {
     return '';
   }
 
-  // Group spans by date and sum hours
+  // Get all Shiba project names from user's games
+  const shibaProjectNames = new Set();
+  userGames.forEach(game => {
+    const projects = game.fields?.['Hackatime Projects'];
+    if (projects) {
+      const projectNames = Array.isArray(projects) 
+        ? projects.filter(Boolean)
+        : (typeof projects === 'string' ? projects.split(',').map(p => p.trim()) : []);
+      
+      projectNames.forEach(projectName => {
+        if (projectName) {
+          shibaProjectNames.add(projectName.toLowerCase());
+        }
+      });
+    }
+  });
+
+  // If no Shiba projects found, return empty string
+  if (shibaProjectNames.size === 0) {
+    return '';
+  }
+
+  // Group spans by date and sum hours (Shiba projects only)
   const dailyHours = {};
   
-  // Process all spans from all projects
+  // Process spans only from Shiba projects
   for (const project of hackatimeData.projects) {
     if (!project.name || !spansData[project.name]) continue;
+    
+    // Only include projects that are linked to Shiba games
+    if (!shibaProjectNames.has(project.name.toLowerCase())) {
+      continue;
+    }
     
     const projectSpans = spansData[project.name];
     
@@ -708,11 +736,27 @@ async function updatePostHoursSpent(postId, hoursSpent) {
 
 // Function to sync user daysActive data
 async function syncUserDaysActive() {
-  console.log('Fetching all users from Airtable...');
+  console.log('Fetching all users and games from Airtable...');
   
-  // Fetch all users
-  const allUsers = await fetchAllUsers();
-  console.log(`Fetched ${allUsers.length} users. Processing daysActive data...`);
+  // Fetch all users and games in parallel
+  const [allUsers, allGames] = await Promise.all([
+    fetchAllUsers(),
+    fetchAllGames()
+  ]);
+  
+  console.log(`Fetched ${allUsers.length} users and ${allGames.length} games. Processing daysActive data...`);
+  
+  // Group games by user (slack id) for efficient lookup
+  const gamesByUser = {};
+  allGames.forEach(game => {
+    const slackId = game.fields?.['slack id'];
+    if (slackId) {
+      if (!gamesByUser[slackId]) {
+        gamesByUser[slackId] = [];
+      }
+      gamesByUser[slackId].push(game);
+    }
+  });
   
   let userSuccessCount = 0;
   let userErrorCount = 0;
@@ -734,6 +778,9 @@ async function syncUserDaysActive() {
     }
     
     try {
+      // Get user's games from the pre-fetched data
+      const userGames = gamesByUser[slackId] || [];
+      
       // Fetch Hackatime data for this user
       const hackatimeData = await retryWithBackoff(async () => {
         return await fetchHackatimeData(slackId);
@@ -744,8 +791,8 @@ async function syncUserDaysActive() {
         return await fetchHackatimeSpans(slackId);
       });
       
-      // Format the daysActive string
-      const newDaysActiveString = formatDaysActiveString(hackatimeData, spansData);
+      // Format the daysActive string (Shiba projects only)
+      const newDaysActiveString = formatDaysActiveString(hackatimeData, spansData, userGames);
       
       // Only update if the string would change
       if (newDaysActiveString !== currentDaysActive) {
