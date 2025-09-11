@@ -70,6 +70,10 @@ async function testThomasUser() {
   }
   
   console.log('\n🎉 Test completed!');
+  
+  // Test the new daysActive functionality
+  console.log('\n🧪 Testing daysActive functionality...');
+  await testDaysActiveFunctionality(slackId);
 }
 
 // Helper functions
@@ -464,6 +468,167 @@ async function updatePostHoursSpent(postId, hoursSpent) {
   }
   
   return true;
+}
+
+// Function to update user's daysActive field
+async function updateUserDaysActive(userId, newDaysActiveString) {
+  const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+  const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
+  const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
+  
+  const url = `${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_USERS_TABLE)}/${userId}`;
+  
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fields: {
+        daysActive: newDaysActiveString
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`Failed to update user ${userId}: ${response.status} ${errorText}`);
+  }
+  
+  return true;
+}
+
+// Test function for daysActive functionality
+async function testDaysActiveFunctionality(slackId) {
+  console.log(`Testing daysActive formatting for Slack ID: ${slackId}`);
+  
+  try {
+    // Fetch Hackatime data
+    const hackatimeData = await fetchHackatimeData(slackId);
+    console.log(`📊 Found ${hackatimeData.projects.length} projects in Hackatime`);
+    
+    // Fetch spans data
+    const spansData = await fetchHackatimeSpans(slackId);
+    console.log(`⏱️ Found spans for ${Object.keys(spansData).length} projects`);
+    
+    // Format the daysActive string
+    const daysActiveString = formatDaysActiveString(hackatimeData, spansData);
+    console.log(`📅 Formatted daysActive string: "${daysActiveString}"`);
+    
+    // Find the user in Airtable
+    const user = await findUserBySlackId(slackId);
+    if (user) {
+      const currentDaysActive = user.fields?.['daysActive'] || '';
+      console.log(`📋 Current daysActive in Airtable: "${currentDaysActive}"`);
+      
+      if (daysActiveString !== currentDaysActive) {
+        console.log(`🔄 daysActive would be updated (different from current value)`);
+        
+        // Actually update the user to test the functionality
+        try {
+          await updateUserDaysActive(user.id, daysActiveString);
+          console.log(`✅ Successfully updated user daysActive in Airtable`);
+        } catch (error) {
+          console.error(`❌ Failed to update user daysActive:`, error.message);
+        }
+      } else {
+        console.log(`✅ daysActive unchanged (same as current value)`);
+      }
+    } else {
+      console.log(`❌ User not found in Airtable`);
+    }
+    
+  } catch (error) {
+    console.error(`❌ Error testing daysActive functionality:`, error.message);
+  }
+}
+
+// Helper function to format daysActive string (copied from main file)
+function formatDaysActiveString(hackatimeData, spansData) {
+  if (!hackatimeData || !hackatimeData.projects || hackatimeData.projects.length === 0) {
+    return '';
+  }
+
+  // Group spans by date and sum hours
+  const dailyHours = {};
+  
+  // Process all spans from all projects
+  for (const project of hackatimeData.projects) {
+    if (!project.name || !spansData[project.name]) continue;
+    
+    const projectSpans = spansData[project.name];
+    
+    for (const span of projectSpans) {
+      if (!span.start_time || !span.end_time) continue;
+      
+      // Convert Unix timestamp to date
+      const startDate = new Date(span.start_time * 1000);
+      const endDate = new Date(span.end_time * 1000);
+      
+      // Calculate duration in hours
+      const durationHours = (span.end_time - span.start_time) / 3600;
+      
+      // Create date key in M/D/YY format
+      const dateKey = `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear().toString().slice(-2)}`;
+      
+      if (!dailyHours[dateKey]) {
+        dailyHours[dateKey] = 0;
+      }
+      dailyHours[dateKey] += durationHours;
+    }
+  }
+  
+  // Convert to sorted array and format
+  const sortedDays = Object.entries(dailyHours)
+    .sort(([a], [b]) => {
+      const [monthA, dayA, yearA] = a.split('/').map(Number);
+      const [monthB, dayB, yearB] = b.split('/').map(Number);
+      const dateA = new Date(2000 + yearA, monthA - 1, dayA);
+      const dateB = new Date(2000 + yearB, monthB - 1, dayB);
+      return dateA - dateB;
+    })
+    .map(([date, hours]) => `${date}: ${hours.toFixed(1)}`)
+    .join(', ');
+  
+  return sortedDays;
+}
+
+// Helper function to find user by Slack ID
+async function findUserBySlackId(slackId) {
+  const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+  const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
+  const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
+  
+  try {
+    const params = new URLSearchParams();
+    params.set('filterByFormula', `{slack id} = '${slackId}'`);
+    
+    const response = await fetch(`${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_USERS_TABLE)}?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const records = data.records || [];
+    
+    if (records.length > 0) {
+      return records[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error finding user by Slack ID:', error.message);
+    return null;
+  }
 }
 
 // Run the test

@@ -16,6 +16,7 @@ const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_GAMES_TABLE = process.env.AIRTABLE_GAMES_TABLE || 'Games';
 const AIRTABLE_POSTS_TABLE = process.env.AIRTABLE_POSTS_TABLE || 'Posts';
+const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
 const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 
 // Smart backoff configuration
@@ -219,7 +220,11 @@ async function performFullSync() {
     }
   }
   
-  console.log(`Sync complete! ${successCount} successful, ${errorCount} errors, ${skippedCount} skipped`);
+  console.log(`Games sync complete! ${successCount} successful, ${errorCount} errors, ${skippedCount} skipped`);
+  
+  // Now sync user daysActive data
+  console.log('Starting user daysActive sync...');
+  const userSyncResult = await syncUserDaysActive();
   
   return {
     success: true,
@@ -228,6 +233,7 @@ async function performFullSync() {
     successfulUpdates: successCount,
     errors: errorCount,
     skipped: skippedCount,
+    userSync: userSyncResult,
     timestamp: new Date().toISOString()
   };
 }
@@ -270,6 +276,30 @@ async function fetchAllGames() {
     offset = page?.offset;
     
     console.log(`Fetched ${pageRecords.length} games, total so far: ${allRecords.length}`);
+  } while (offset);
+  
+  return allRecords;
+}
+
+async function fetchAllUsers() {
+  let allRecords = [];
+  let offset;
+  
+  do {
+    const params = new URLSearchParams();
+    params.set('pageSize', '100');
+    if (offset) params.set('offset', offset);
+    
+    console.log(`Fetching users page... (offset: ${offset || 'none'})`);
+    const page = await airtableRequest(`${encodeURIComponent(AIRTABLE_USERS_TABLE)}?${params.toString()}`, {
+      method: 'GET',
+    });
+    
+    const pageRecords = page?.records || [];
+    allRecords = allRecords.concat(pageRecords);
+    offset = page?.offset;
+    
+    console.log(`Fetched ${pageRecords.length} users, total so far: ${allRecords.length}`);
   } while (offset);
   
   return allRecords;
@@ -576,6 +606,81 @@ function calculateHoursFromSpans(spansData, projectNames, startTime, endTime) {
   return totalSeconds / 3600; // Convert to hours
 }
 
+// Function to format Hackatime data into daysActive string format
+function formatDaysActiveString(hackatimeData, spansData) {
+  if (!hackatimeData || !hackatimeData.projects || hackatimeData.projects.length === 0) {
+    return '';
+  }
+
+  // Group spans by date and sum hours
+  const dailyHours = {};
+  
+  // Process all spans from all projects
+  for (const project of hackatimeData.projects) {
+    if (!project.name || !spansData[project.name]) continue;
+    
+    const projectSpans = spansData[project.name];
+    
+    for (const span of projectSpans) {
+      if (!span.start_time || !span.end_time) continue;
+      
+      // Convert Unix timestamp to date
+      const startDate = new Date(span.start_time * 1000);
+      const endDate = new Date(span.end_time * 1000);
+      
+      // Calculate duration in hours
+      const durationHours = (span.end_time - span.start_time) / 3600;
+      
+      // Create date key in M/D/YY format
+      const dateKey = `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear().toString().slice(-2)}`;
+      
+      if (!dailyHours[dateKey]) {
+        dailyHours[dateKey] = 0;
+      }
+      dailyHours[dateKey] += durationHours;
+    }
+  }
+  
+  // Convert to sorted array and format
+  const sortedDays = Object.entries(dailyHours)
+    .sort(([a], [b]) => {
+      const [monthA, dayA, yearA] = a.split('/').map(Number);
+      const [monthB, dayB, yearB] = b.split('/').map(Number);
+      const dateA = new Date(2000 + yearA, monthA - 1, dayA);
+      const dateB = new Date(2000 + yearB, monthB - 1, dayB);
+      return dateA - dateB;
+    })
+    .map(([date, hours]) => `${date}: ${hours.toFixed(1)}`)
+    .join(', ');
+  
+  return sortedDays;
+}
+
+// Function to update user's daysActive field only if it would change
+async function updateUserDaysActive(userId, newDaysActiveString) {
+  const url = `${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_USERS_TABLE)}/${userId}`;
+  
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fields: {
+        daysActive: newDaysActiveString
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`Failed to update user ${userId}: ${response.status} ${errorText}`);
+  }
+  
+  return true;
+}
+
 // New function to update post hours spent
 async function updatePostHoursSpent(postId, hoursSpent) {
   const url = `${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_POSTS_TABLE)}/${postId}`;
@@ -599,6 +704,86 @@ async function updatePostHoursSpent(postId, hoursSpent) {
   }
   
   return true;
+}
+
+// Function to sync user daysActive data
+async function syncUserDaysActive() {
+  console.log('Fetching all users from Airtable...');
+  
+  // Fetch all users
+  const allUsers = await fetchAllUsers();
+  console.log(`Fetched ${allUsers.length} users. Processing daysActive data...`);
+  
+  let userSuccessCount = 0;
+  let userErrorCount = 0;
+  let userSkippedCount = 0;
+  
+  for (let i = 0; i < allUsers.length; i++) {
+    const user = allUsers[i];
+    const fields = user.fields || {};
+    const slackId = fields['slack id'];
+    const currentDaysActive = fields['daysActive'] || '';
+    
+    console.log(`Processing user ${i + 1}/${allUsers.length}: ${fields.Name || 'Unknown'} (${slackId})`);
+    
+    // Skip if no slack id
+    if (!slackId) {
+      console.log(`Skipping user - missing slack id`);
+      userSkippedCount++;
+      continue;
+    }
+    
+    try {
+      // Fetch Hackatime data for this user
+      const hackatimeData = await retryWithBackoff(async () => {
+        return await fetchHackatimeData(slackId);
+      });
+      
+      // Fetch spans data for this user
+      const spansData = await retryWithBackoff(async () => {
+        return await fetchHackatimeSpans(slackId);
+      });
+      
+      // Format the daysActive string
+      const newDaysActiveString = formatDaysActiveString(hackatimeData, spansData);
+      
+      // Only update if the string would change
+      if (newDaysActiveString !== currentDaysActive) {
+        console.log(`Updating daysActive for ${fields.Name}: "${newDaysActiveString}"`);
+        
+        const updateSuccess = await retryWithBackoff(async () => {
+          return await updateUserDaysActive(user.id, newDaysActiveString);
+        });
+        
+        if (updateSuccess) {
+          userSuccessCount++;
+          console.log(`✅ Updated ${fields.Name} daysActive`);
+        } else {
+          userErrorCount++;
+          console.error(`❌ Failed to update ${fields.Name} daysActive`);
+        }
+      } else {
+        console.log(`Skipping ${fields.Name} - daysActive unchanged`);
+        userSkippedCount++;
+      }
+      
+      // Small delay to be respectful to APIs
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+    } catch (error) {
+      userErrorCount++;
+      console.error(`❌ Error processing user ${fields.Name}:`, error.message);
+    }
+  }
+  
+  console.log(`User daysActive sync complete! ${userSuccessCount} successful, ${userErrorCount} errors, ${userSkippedCount} skipped`);
+  
+  return {
+    totalUsers: allUsers.length,
+    successfulUpdates: userSuccessCount,
+    errors: userErrorCount,
+    skipped: userSkippedCount
+  };
 }
 
 // Minimal middleware - only what's needed
