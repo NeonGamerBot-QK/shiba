@@ -188,6 +188,9 @@ export default function MyGamesComponent({
           AverageMoodScore: g.AverageMoodScore ?? 0,
           numberComplete: g.numberComplete ?? 0,
           Feedback: g.Feedback ?? '',
+          FeedbackStatus: g.FeedbackStatus ?? [],
+          FeedbackMessage: g.FeedbackMessage ?? [],
+          feedbackResponses: g.feedbackResponses ?? [],
           posts: Array.isArray(g.posts) ? g.posts.map(p => ({
             ...p,
             badges: Array.isArray(p.badges) ? p.badges : []
@@ -336,6 +339,9 @@ export default function MyGamesComponent({
           AverageMoodScore: g.AverageMoodScore ?? 0,
           numberComplete: g.numberComplete ?? 0,
           Feedback: g.Feedback ?? '',
+          FeedbackStatus: g.FeedbackStatus ?? [],
+          FeedbackMessage: g.FeedbackMessage ?? [],
+          feedbackResponses: g.feedbackResponses ?? [],
           posts: Array.isArray(g.posts) ? g.posts.map(p => ({
             ...p,
             badges: Array.isArray(p.badges) ? p.badges : []
@@ -698,6 +704,9 @@ function DetailView({
     process.env.NEXT_PUBLIC_UPLOAD_AUTH_TOKEN || "NeverTrustTheLiving#446",
   );
   const [userProfile, setUserProfile] = useState(null);
+  const [feedbackResponses, setFeedbackResponses] = useState({});
+  const [reportMessages, setReportMessages] = useState({});
+  const [showReportForm, setShowReportForm] = useState({});
 
   // Refs for file inputs
   const buildFileInputRef = useRef(null);
@@ -861,7 +870,61 @@ function DetailView({
     setIsUploading(false);
     setIsArtlogUploading(false);
     clearFileInputs();
-  }, [game?.id]);
+    
+    // Load existing feedback responses
+    loadFeedbackResponses();
+  }, [game?.id, game?.Feedback, game?.feedbackResponses]);
+
+  const loadFeedbackResponses = () => {
+    if (!game?.Feedback || !Array.isArray(game.Feedback) || game.Feedback.length === 0) {
+      console.log("No feedback to load for game:", game?.id);
+      return;
+    }
+
+    try {
+      const responses = {};
+      const messages = {};
+      
+      // Use the feedbackResponses array that's already processed by the API
+      console.log("game.feedbackResponses:", game.feedbackResponses);
+      if (game.feedbackResponses && Array.isArray(game.feedbackResponses)) {
+        console.log("Processing feedbackResponses array with length:", game.feedbackResponses.length);
+        game.feedbackResponses.forEach((feedbackResponse, index) => {
+          const feedbackKey = `${game.id}-${index}`;
+          console.log(`Processing feedback ${index}:`, {
+            feedbackKey,
+            feedbackResponse,
+            response: feedbackResponse.response,
+            responseMessage: feedbackResponse.responseMessage
+          });
+          
+          // Convert "None" to null for consistency
+          if (feedbackResponse.response && feedbackResponse.response !== "None") {
+            responses[feedbackKey] = feedbackResponse.response;
+            console.log(`Set response for ${feedbackKey}:`, feedbackResponse.response);
+          }
+          
+          if (feedbackResponse.responseMessage && feedbackResponse.responseMessage !== "None") {
+            messages[feedbackKey] = feedbackResponse.responseMessage;
+            console.log(`Set message for ${feedbackKey}:`, feedbackResponse.responseMessage);
+          }
+        });
+      } else {
+        console.log("No feedbackResponses array found or it's not an array");
+      }
+      
+      console.log("Setting feedback responses:", { responses, messages });
+      console.log("Game object received:", {
+        id: game.id,
+        feedbackResponses: game.feedbackResponses,
+        Feedback: game.Feedback
+      });
+      setFeedbackResponses(responses);
+      setReportMessages(messages);
+    } catch (error) {
+      console.error("Error loading feedback responses:", error);
+    }
+  };
 
   useEffect(() => {
     // Fetch Hackatime projects via server proxy to avoid CORS
@@ -1527,17 +1590,353 @@ function DetailView({
                 lineHeight: 1.5,
                 fontStyle: "italic"
               }}>
-                {game.Feedback.map((feedback, index) => (
-                  <div key={index} style={{ 
-                    marginBottom: 8,
-                    padding: "8px 12px",
-                    backgroundColor: "rgba(255, 255, 255, 0.5)",
-                    borderRadius: 8,
-                    border: "1px solid rgba(0, 0, 0, 0.1)"
-                  }}>
-                    "{feedback}"
-                  </div>
-                ))}
+                {game.Feedback.map((feedback, index) => {
+                  const feedbackKey = `${game.id}-${index}`;
+                  const currentResponse = feedbackResponses[feedbackKey];
+                  console.log(`Feedback ${index} (${feedbackKey}):`, {
+                    currentResponse,
+                    allResponses: feedbackResponses,
+                    feedbackStatus: game.FeedbackStatus?.[index],
+                    feedbackMessage: game.FeedbackMessage?.[index]
+                  });
+                  
+                  return (
+                    <div key={index} style={{ 
+                      marginBottom: 8,
+                      padding: "8px 12px",
+                      backgroundColor: "rgba(255, 255, 255, 0.5)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(0, 0, 0, 0.1)"
+                    }}>
+                      <div style={{ marginBottom: 8 }}>
+                        "{feedback}"
+                      </div>
+                      <div style={{ 
+                        display: "flex", 
+                        gap: "12px", 
+                        marginTop: "8px" 
+                      }}>
+                        <button
+                          style={{
+                            background: currentResponse === "Like" ? "#666" : "none",
+                            border: "1px solid #ccc",
+                            color: currentResponse === "Like" ? "#fff" : "#666",
+                            textDecoration: "none",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                          onClick={async () => {
+                            const newResponse = currentResponse === "Like" ? null : "Like";
+                            console.log("Like button clicked:", { feedbackKey, currentResponse, newResponse });
+                            setFeedbackResponses(prev => ({
+                              ...prev,
+                              [feedbackKey]: newResponse
+                            }));
+                            
+                            // Update in Airtable
+                            try {
+                              const res = await fetch("/api/updateFeedbackResponse", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ 
+                                  token, 
+                                  feedbackText: feedback, 
+                                  response: newResponse 
+                                }),
+                              });
+                              const data = await res.json();
+                              console.log("Update response:", data);
+                              if (!res.ok) {
+                                console.error("Failed to update feedback response:", data.message);
+                              }
+                            } catch (error) {
+                              console.error("Error updating feedback response:", error);
+                            }
+                          }}
+                        >
+                          <img 
+                            src="/thumb_up.svg" 
+                            alt="Like" 
+                            style={{ 
+                              width: "14px", 
+                              height: "14px", 
+                              filter: currentResponse === "Like" ? "brightness(0) invert(1)" : "opacity(0.6)" 
+                            }} 
+                          />
+                          Like Feedback
+                        </button>
+                        <button
+                          style={{
+                            background: currentResponse === "Dislike" ? "#666" : "none",
+                            border: "1px solid #ccc",
+                            color: currentResponse === "Dislike" ? "#fff" : "#666",
+                            textDecoration: "none",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                          onClick={async () => {
+                            const newResponse = currentResponse === "Dislike" ? null : "Dislike";
+                            setFeedbackResponses(prev => ({
+                              ...prev,
+                              [feedbackKey]: newResponse
+                            }));
+                            
+                            // Update in Airtable
+                            try {
+                              const res = await fetch("/api/updateFeedbackResponse", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ 
+                                  token, 
+                                  feedbackText: feedback, 
+                                  response: newResponse 
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                console.error("Failed to update feedback response:", data.message);
+                              }
+                            } catch (error) {
+                              console.error("Error updating feedback response:", error);
+                            }
+                          }}
+                        >
+                          <img 
+                            src="/thumb_down.svg" 
+                            alt="Dislike" 
+                            style={{ 
+                              width: "14px", 
+                              height: "14px", 
+                              filter: currentResponse === "Dislike" ? "brightness(0) invert(1)" : "opacity(0.6)" 
+                            }} 
+                          />
+                          Dislike Feedback
+                        </button>
+                        <button
+                          style={{
+                            background: currentResponse === "Report" ? "#666" : "none",
+                            border: "1px solid #ccc",
+                            color: currentResponse === "Report" ? "#fff" : "#666",
+                            textDecoration: "none",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                          onClick={async () => {
+                            if (currentResponse === "Report") {
+                              // If already reporting, deselect it
+                              const newResponse = null;
+                              setFeedbackResponses(prev => ({
+                                ...prev,
+                                [feedbackKey]: newResponse
+                              }));
+                              setShowReportForm(prev => ({
+                                ...prev,
+                                [feedbackKey]: false
+                              }));
+                              
+                              // Update in Airtable
+                              try {
+                                const res = await fetch("/api/updateFeedbackResponse", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ 
+                                    token, 
+                                    feedbackText: feedback, 
+                                    response: newResponse,
+                                    responseMessage: null
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  console.error("Failed to update feedback response:", data.message);
+                                }
+                              } catch (error) {
+                                console.error("Error updating feedback response:", error);
+                              }
+                            } else {
+                              // If selecting Report, show the form
+                              setShowReportForm(prev => ({
+                                ...prev,
+                                [feedbackKey]: true
+                              }));
+                            }
+                          }}
+                        >
+                          <img 
+                            src="/flag.svg" 
+                            alt="Report" 
+                            style={{ 
+                              width: "14px", 
+                              height: "14px", 
+                              filter: currentResponse === "Report" ? "brightness(0) invert(1)" : "opacity(0.6)" 
+                            }} 
+                          />
+                          Report Feedback
+                        </button>
+                      </div>
+                      
+                      {/* Report Form */}
+                      {showReportForm[feedbackKey] && (
+                        <div style={{ 
+                          marginTop: "12px", 
+                          padding: "12px", 
+                          backgroundColor: "rgba(255, 255, 255, 0.8)",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(0, 0, 0, 0.1)"
+                        }}>
+                          <div style={{ 
+                            fontSize: "12px", 
+                            fontWeight: "bold", 
+                            marginBottom: "8px",
+                            color: "#333"
+                          }}>
+                            Explain why you're reporting this post
+                          </div>
+                          <textarea
+                            value={reportMessages[feedbackKey] || ""}
+                            onChange={(e) => {
+                              // Remove commas from the input
+                              const value = e.target.value.replace(/,/g, '');
+                              setReportMessages(prev => ({
+                                ...prev,
+                                [feedbackKey]: value
+                              }));
+                            }}
+                            placeholder="Please explain why you're reporting this feedback..."
+                            style={{
+                              width: "100%",
+                              minHeight: "60px",
+                              padding: "8px",
+                              border: "1px solid #ccc",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              fontFamily: "inherit",
+                              resize: "vertical",
+                              boxSizing: "border-box"
+                            }}
+                          />
+                          <div style={{ 
+                            display: "flex", 
+                            gap: "8px", 
+                            marginTop: "8px",
+                            justifyContent: "flex-end"
+                          }}>
+                            <button
+                              onClick={() => {
+                                setShowReportForm(prev => ({
+                                  ...prev,
+                                  [feedbackKey]: false
+                                }));
+                                setReportMessages(prev => ({
+                                  ...prev,
+                                  [feedbackKey]: ""
+                                }));
+                              }}
+                              style={{
+                                background: "none",
+                                border: "1px solid #ccc",
+                                color: "#666",
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                                fontFamily: "inherit"
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const message = reportMessages[feedbackKey] || "";
+                                if (!message.trim()) {
+                                  alert("Please provide a reason for reporting this feedback.");
+                                  return;
+                                }
+                                
+                                // Set the response to "Report" and update in Airtable
+                                setFeedbackResponses(prev => ({
+                                  ...prev,
+                                  [feedbackKey]: "Report"
+                                }));
+                                setShowReportForm(prev => ({
+                                  ...prev,
+                                  [feedbackKey]: false
+                                }));
+                                
+                                try {
+                                  const res = await fetch("/api/updateFeedbackResponse", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ 
+                                      token, 
+                                      feedbackText: feedback, 
+                                      response: "Report",
+                                      responseMessage: message.trim()
+                                    }),
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) {
+                                    console.error("Failed to update feedback response:", data.message);
+                                    // Revert the state if API call failed
+                                    setFeedbackResponses(prev => ({
+                                      ...prev,
+                                      [feedbackKey]: currentResponse
+                                    }));
+                                    setShowReportForm(prev => ({
+                                      ...prev,
+                                      [feedbackKey]: true
+                                    }));
+                                  }
+                                } catch (error) {
+                                  console.error("Error updating feedback response:", error);
+                                  // Revert the state if API call failed
+                                  setFeedbackResponses(prev => ({
+                                    ...prev,
+                                    [feedbackKey]: currentResponse
+                                  }));
+                                  setShowReportForm(prev => ({
+                                    ...prev,
+                                    [feedbackKey]: true
+                                  }));
+                                }
+                              }}
+                              style={{
+                                background: "#666",
+                                border: "1px solid #666",
+                                color: "#fff",
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                                fontFamily: "inherit"
+                              }}
+                            >
+                              Submit Report
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

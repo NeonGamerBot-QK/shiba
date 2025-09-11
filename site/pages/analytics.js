@@ -3,8 +3,10 @@ import ShibaFunnelChart from "../components/ShibaFunnelChart";
 import SignupCountComponent from "../components/SignupCountComponent";
 import HoursPerDayChart from "../components/HoursPerDayChart";
 import ReviewBacklogChart from "../components/ReviewBacklogChart";
+import DaysActiveChart from "../components/DaysActiveChart";
+import DailyActiveUsersChart from "../components/DailyActiveUsersChart";
 
-export default function AnalyticsPage({ funnelData, signupData, hoursPerDayData, reviewBacklogData }) {
+export default function AnalyticsPage({ funnelData, signupData, hoursPerDayData, reviewBacklogData, daysActiveData, dailyActiveUsersData }) {
   useEffect(() => {
     // Disable the animated background for this page
     const animatedBackground = document.querySelector('[style*="backgroundImage"]');
@@ -57,6 +59,10 @@ export default function AnalyticsPage({ funnelData, signupData, hoursPerDayData,
         </div>
         
         <HoursPerDayChart data={hoursPerDayData} />
+        
+        <DaysActiveChart data={daysActiveData} />
+        
+        <DailyActiveUsersChart data={dailyActiveUsersData} />
       </div>
     </div>
   );
@@ -81,6 +87,8 @@ export async function getServerSideProps() {
         signupData: { totalSignups: 0, hackClubCommunity: 0, referrals: 0 },
         hoursPerDayData: [],
         reviewBacklogData: [],
+        daysActiveData: [],
+        dailyActiveUsersData: [],
       },
     };
   }
@@ -128,6 +136,64 @@ export async function getServerSideProps() {
       fetchAllAirtableRecords(AIRTABLE_USERS_TABLE),
       fetchAllAirtableRecords(AIRTABLE_POSTS_TABLE)
     ]);
+
+    // Process daysActive data from all users
+    const dailyHours = {};
+    const dailyActiveUsers = {};
+    
+    allUsers.forEach(user => {
+      const daysActive = user.fields?.['daysActive'];
+      
+      if (daysActive && typeof daysActive === 'string' && daysActive.trim() !== '') {
+        // Parse the daysActive string format: "M/D/YY: hours, M/D/YY: hours"
+        const entries = daysActive.split(',').map(entry => entry.trim());
+        
+        entries.forEach(entry => {
+          const [dateStr, hoursStr] = entry.split(':').map(s => s.trim());
+          if (dateStr && hoursStr) {
+            try {
+              const hours = parseFloat(hoursStr);
+              if (!isNaN(hours) && hours > 0) {
+                // Convert M/D/YY to YYYY-MM-DD format
+                const [month, day, year] = dateStr.split('/').map(n => parseInt(n));
+                const fullYear = 2000 + year; // Convert YY to YYYY
+                const date = new Date(fullYear, month - 1, day);
+                const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                
+                // Sum hours for daysActive chart
+                if (!dailyHours[dateKey]) {
+                  dailyHours[dateKey] = 0;
+                }
+                dailyHours[dateKey] += hours;
+                
+                // Count users for daily active users chart
+                if (!dailyActiveUsers[dateKey]) {
+                  dailyActiveUsers[dateKey] = 0;
+                }
+                dailyActiveUsers[dateKey] += 1; // Count each user once per day
+              }
+            } catch (error) {
+              console.warn(`Failed to parse daysActive entry: ${entry}`, error);
+            }
+          }
+        });
+      }
+    });
+
+    // Convert to array format and sort by date
+    const daysActiveArray = Object.entries(dailyHours)
+      .map(([date, hours]) => ({
+        date,
+        hours: Math.round(hours * 100) / 100 // Round to 2 decimal places
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const dailyActiveUsersArray = Object.entries(dailyActiveUsers)
+      .map(([date, userCount]) => ({
+        date,
+        userCount
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // Process funnel data
     const signedUp = allUsers.length;
@@ -306,6 +372,8 @@ export async function getServerSideProps() {
         signupData,
         hoursPerDayData: hoursPerDayArray,
         reviewBacklogData,
+        daysActiveData: daysActiveArray,
+        dailyActiveUsersData: dailyActiveUsersArray,
       },
     };
   } catch (error) {
@@ -336,6 +404,8 @@ export async function getServerSideProps() {
         },
         hoursPerDayData: [],
         reviewBacklogData: [],
+        daysActiveData: [],
+        dailyActiveUsersData: [],
       },
     };
   }

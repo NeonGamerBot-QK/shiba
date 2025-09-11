@@ -36,6 +36,13 @@ export default async function handler(req, res) {
     console.log(`[GetMyGames] Raw game records:`, gameRecords);
     console.log(`[GetMyGames] Number of games found: ${gameRecords?.length || 0}`);
     
+    // Debug: Show all available fields for games with feedback
+    gameRecords.forEach((record, index) => {
+      if (record.fields?.Feedback && Array.isArray(record.fields.Feedback) && record.fields.Feedback.length > 0) {
+        console.log(`[GetMyGames] Game ${index} with feedback - all fields:`, Object.keys(record.fields));
+      }
+    });
+    
     if (!gameRecords || gameRecords.length === 0) {
       console.log(`[GetMyGames] No games found, returning empty array`);
       return res.status(200).json([]);
@@ -45,6 +52,7 @@ export default async function handler(req, res) {
     console.log(`[GetMyGames] Fetching challenges for token: ${token}`);
     const allChallenges = await fetchChallengesForUser(token);
     console.log(`[GetMyGames] Number of challenges found: ${allChallenges?.length || 0}`);
+
 
     
     const games = await Promise.all(gameRecords.map(async (rec) => {
@@ -59,8 +67,45 @@ export default async function handler(req, res) {
         Array.isArray(challenge.assignedGame) && 
         challenge.assignedGame.includes(gameId)
       );
+
+      // Get feedback responses from the Games table fields
+      // Handle both array and comma-separated string formats
+      const feedbackStatusesRaw = rec.fields?.FeedbackStatus;
+      const feedbackMessagesRaw = rec.fields?.FeedbackMessage;
+      const feedbacksRaw = rec.fields?.Feedback;
       
-      console.log(`[GetMyGames] Game "${gameName}" has ${posts.length} posts`);
+      const feedbackStatuses = Array.isArray(feedbackStatusesRaw) 
+        ? feedbackStatusesRaw 
+        : (typeof feedbackStatusesRaw === 'string' ? feedbackStatusesRaw.split(',').map(s => s.trim()) : []);
+      
+      const feedbackMessages = Array.isArray(feedbackMessagesRaw) 
+        ? feedbackMessagesRaw 
+        : (typeof feedbackMessagesRaw === 'string' ? feedbackMessagesRaw.split(',').map(s => s.trim()) : []);
+      
+      const feedbacks = Array.isArray(feedbacksRaw) 
+        ? feedbacksRaw 
+        : (typeof feedbacksRaw === 'string' ? feedbacksRaw.split(',').map(s => s.trim()) : []);
+      
+      // Map feedback responses to match the expected format
+      const gameFeedbackResponses = feedbacks.map((feedback, index) => ({
+        feedback: feedback,
+        response: feedbackStatuses[index] || null,
+        responseMessage: feedbackMessages[index] || null
+      }));
+      
+      // Debug feedback data
+      if (feedbacks.length > 0) {
+        console.log(`[GetMyGames] Game "${gameName}" feedback debug:`, {
+          rawFeedbackStatuses: feedbackStatusesRaw,
+          rawFeedbackMessages: feedbackMessagesRaw,
+          rawFeedbacks: feedbacksRaw,
+          processedFeedbacks: feedbacks,
+          processedFeedbackStatuses: feedbackStatuses,
+          processedFeedbackMessages: feedbackMessages,
+          gameFeedbackResponses: gameFeedbackResponses,
+          allFields: Object.keys(rec.fields || {})
+        });
+      }
       
       // Transform posts to match the structure that MyGamesComponent expects
       const transformedPosts = posts.map(rec => {
@@ -179,6 +224,9 @@ export default async function handler(req, res) {
         AverageMoodScore: rec.fields?.AverageMoodScore || 0,
         numberComplete: rec.fields?.numberComplete || 0,
         Feedback: rec.fields?.Feedback || '',
+        FeedbackStatus: rec.fields?.FeedbackStatus || [],
+        FeedbackMessage: rec.fields?.FeedbackMessage || [],
+        feedbackResponses: gameFeedbackResponses,
         posts: transformedPosts,
         challenges: gameChallenges,
       };
@@ -407,4 +455,5 @@ async function fetchChallengesForUser(userToken) {
     return [];
   }
 }
+
 
