@@ -22,16 +22,26 @@ async function getCachedGamesData() {
       
       if (now - stats.mtime.getTime() < CACHE_DURATION) {
         const cachedData = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
-        console.log(`Using file-cached games data (${cachedData.length} games)`);
+        console.log(`[getCachedGamesData] Using file-cached games data (${cachedData.length} games)`);
+        
+        // Debug: log some sample data
+        if (cachedData.length > 0) {
+          console.log('[getCachedGamesData] Sample cached game:', {
+            slackId: cachedData[0].slackId,
+            name: cachedData[0].name,
+            hasAllFields: !!(cachedData[0].slackId && cachedData[0].name)
+          });
+        }
+        
         return cachedData;
       }
     }
   } catch (error) {
-    console.log('File cache read failed, fetching fresh data');
+    console.log('[getCachedGamesData] File cache read failed, fetching fresh data');
   }
   
   // Fetch fresh data
-  console.log('Fetching fresh games data from API (build-time)');
+  console.log('[getCachedGamesData] Fetching fresh games data from API (build-time)');
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://shiba.hackclub.com' 
     : 'http://localhost:3000';
@@ -44,6 +54,15 @@ async function getCachedGamesData() {
   
   const games = await response.json();
   
+  // Debug: log some sample data from API
+  if (games.length > 0) {
+    console.log('[getCachedGamesData] Sample API game:', {
+      slackId: games[0].slackId,
+      name: games[0].name,
+      hasAllFields: !!(games[0].slackId && games[0].name)
+    });
+  }
+  
   // Write to file cache
   try {
     // Ensure .next directory exists
@@ -52,9 +71,9 @@ async function getCachedGamesData() {
       fs.mkdirSync(nextDir, { recursive: true });
     }
     fs.writeFileSync(CACHE_FILE, JSON.stringify(games, null, 2));
-    console.log(`File-cached ${games.length} games`);
+    console.log(`[getCachedGamesData] File-cached ${games.length} games`);
   } catch (error) {
-    console.log('File cache write failed, but data fetched successfully');
+    console.log('[getCachedGamesData] File cache write failed, but data fetched successfully');
   }
   
   return games;
@@ -742,6 +761,10 @@ export default function GamesPage({ gameData, error }) {
 export async function getStaticPaths() {
   try {
     const games = await getCachedGamesData();
+    console.log(`[getStaticPaths] Got ${games.length} games from cache`);
+    
+    // Debug: log some games to see what we have
+    console.log('[getStaticPaths] Sample games:', games.slice(0, 3).map(g => ({ slackId: g.slackId, name: g.name })));
     
     // Generate paths for ALL games with full data
     const paths = games
@@ -761,10 +784,18 @@ export async function getStaticPaths() {
         }
       }));
 
-    console.log(`Pre-generated ${paths.length} static paths for games`);
+    console.log(`[getStaticPaths] Pre-generated ${paths.length} static paths for games`);
+    
+    // Debug: check if our specific game is in the paths
+    const targetPath = paths.find(p => p.params.user === 'U041FQB8VK2' && p.params.id === 'WASD Beats');
+    console.log('[getStaticPaths] Target path found:', targetPath);
+    
+    // Debug: log some paths to see what's being generated
+    console.log('[getStaticPaths] Sample paths:', paths.slice(0, 5));
+    
     return {
       paths,
-      fallback: false // Don't generate on-demand since we pre-generated all paths
+      fallback: 'blocking' // Enable on-demand generation for missing paths
     };
   } catch (error) {
     console.error('Error generating static paths:', error);
@@ -785,12 +816,74 @@ export async function getStaticProps(context) {
     console.log(`[getStaticProps] Got ${games.length} games for ${user}/${id}`);
     
     // Find the specific game by user and id
+    // Try both encoded and decoded versions of the game name
+    const decodedId = decodeURIComponent(id);
+    console.log(`[getStaticProps] Looking for game - user: ${user}, id: ${id}, decodedId: ${decodedId}`);
+    
+    // Debug: log some games for this user
+    const userGames = games.filter(game => game.slackId === user);
+    console.log(`[getStaticProps] Games for user ${user}:`, userGames.map(g => g.name));
+    
     const gameData = games.find(game => 
       game.slackId === user && 
-      game.name === id
+      (game.name === id || game.name === decodedId)
     );
 
     if (!gameData) {
+      console.log(`Game not found in static data, falling back to API for ${user}/${id}`);
+      
+      // Fallback to getGame.js API
+      try {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://shiba.hackclub.com' 
+          : 'http://localhost:3000';
+        
+        // Decode the game name in case it's URL encoded
+        const decodedGameName = decodeURIComponent(id);
+        console.log(`[getStaticProps] API fallback - slackId: ${user}, gameName: ${decodedGameName}`);
+        
+        const response = await fetch(`${baseUrl}/api/gameStore/getGame`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            slackId: user,
+            gameName: decodedGameName
+          })
+        });
+
+        console.log(`[getStaticProps] API fallback response status: ${response.status}`);
+
+        if (response.ok) {
+          const apiGameData = await response.json();
+          console.log(`Found game data via API fallback for ${user}/${id}:`, apiGameData.name);
+          
+          // Format the last updated date on the server to avoid hydration issues
+          if (apiGameData && apiGameData.lastUpdated) {
+            apiGameData.lastUpdatedFormatted = new Date(apiGameData.lastUpdated).toLocaleDateString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
+              year: '2-digit'
+            });
+          }
+
+          return {
+            props: {
+              gameData: apiGameData,
+              error: null
+            },
+            revalidate: 900 // Shorter revalidate for API fallback
+          };
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error(`API fallback failed for ${user}/${id}: ${response.status} - ${errorText}`);
+        }
+      } catch (apiError) {
+        console.error(`API fallback error for ${user}/${id}:`, apiError);
+      }
+
+      // If API fallback also fails, return 404
       console.error(`Game not found: ${user}/${id}`);
       return {
         props: {
