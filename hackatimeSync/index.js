@@ -88,6 +88,11 @@ async function performFullSync() {
     throw new Error('Server configuration error: Missing Airtable API key');
   }
 
+  // Start with user daysActive sync first
+  console.log('Starting user daysActive sync...');
+  const userSyncResult = await syncUserDaysActive();
+  
+  console.log('User daysActive sync complete. Now starting games sync...');
   console.log('Fetching all games from Airtable...');
   
   // Fetch all games with pagination, only specific fields
@@ -221,10 +226,6 @@ async function performFullSync() {
   }
   
   console.log(`Games sync complete! ${successCount} successful, ${errorCount} errors, ${skippedCount} skipped`);
-  
-  // Now sync user daysActive data
-  console.log('Starting user daysActive sync...');
-  const userSyncResult = await syncUserDaysActive();
   
   return {
     success: true,
