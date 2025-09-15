@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
-export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset, currentUserProfile, onTimeUpdated }) {
+export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated, badges, HoursSpent, gamePageUrl, postType, timelapseVideoId, githubImageLink, timeScreenshotId, hoursSpent, minutesSpent, postId, timeSpentOnAsset, currentUserProfile, onTimeUpdated, compact = false }) {
   const [slackProfile, setSlackProfile] = useState(null);
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [editHours, setEditHours] = useState(0);
@@ -625,7 +625,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
       
       
       
-      <div style={{ whiteSpace: 'pre-wrap' }}>{content || ''}</div>
+      <div style={{ whiteSpace: 'pre-wrap', fontSize: compact ? '18px' : 'inherit' }}>{content || ''}</div>
 
       {/* Shomato Button - only show if token and postId are provided */}
       {/* Removed as per edit hint */}
@@ -849,6 +849,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
           token={token}
           onPlayCreated={onPlayCreated}
           gamePageUrl={gamePageUrl}
+          compact={compact}
         />
       ) : null}
       {Array.isArray(attachments) && attachments.length > 0 && (() => {

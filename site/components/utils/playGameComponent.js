@@ -11,7 +11,7 @@ import React, { useState, useRef } from "react";
  * - apiBase: string (optional) override API base URL; defaults to NEXT_PUBLIC_API_BASE or same-origin
  * - style: React.CSSProperties (optional)
  */
-export default function PlayGameComponent({ gameId, width = "100%", apiBase, style, gameName, thumbnailUrl, token, onPlayCreated, onGameStart, gamePageUrl }) {
+export default function PlayGameComponent({ gameId, width = "100%", apiBase, style, gameName, thumbnailUrl, token, onPlayCreated, onGameStart, gamePageUrl, compact = false }) {
   const base = apiBase || process.env.NEXT_PUBLIC_API_BASE || "";
   const normalizedWidth = typeof width === "number" ? `${width}` : width;
   const [started, setStarted] = useState(false);
@@ -202,16 +202,18 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
             <div
               className={`cd${animating ? " animating" : ""}`}
               aria-hidden
-              style={
-                thumbnailUrl
+              style={{
+                maxWidth: compact ? "min(120px, 60vw)" : "min(180px, 80vw)",
+                maxHeight: compact ? "min(120px, 60vw)" : "min(180px, 80vw)",
+                ...(thumbnailUrl
                   ? {
                       backgroundImage: `url(${thumbnailUrl})`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                       imageRendering: "pixelated",
                     }
-                  : undefined
-              }
+                  : undefined)
+              }}
             >
               <div className="cd-overlay" />
             </div>
@@ -229,8 +231,9 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
           <style jsx>{`
             .cd {
               position: relative;
-              width: 180px;
-              height: 180px;
+              width: ${compact ? "min(120px, 60vw)" : "min(180px, 80vw)"};
+              height: ${compact ? "min(120px, 60vw)" : "min(180px, 80vw)"};
+              aspect-ratio: 1;
               border-radius: 100%;
               border: 1px solid grey;
               background: 

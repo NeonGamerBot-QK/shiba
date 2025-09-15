@@ -675,13 +675,25 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                     marginBottom: "0.5rem"
                   }}>
                     How can they improve {category}? Please be as specific as you can *
+                    <span style={{
+                      fontSize: "clamp(0.75rem, 1rem, 1.25rem)",
+                      fontWeight: "normal",
+                      opacity: 0.8,
+                      marginLeft: "0.5rem"
+                    }}>
+                      ({ratingFeedback[category].trim().split(/\s+/).filter(word => word.length > 0).length}/20 words minimum)
+                    </span>
                   </label>
                   <textarea
                     value={ratingFeedback[category]}
-                    onChange={(e) => setRatingFeedback(prev => ({
-                      ...prev,
-                      [category]: e.target.value
-                    }))}
+                    onChange={(e) => {
+                      // Remove commas from the input
+                      const value = e.target.value.replace(/,/g, '');
+                      setRatingFeedback(prev => ({
+                        ...prev,
+                        [category]: value
+                      }));
+                    }}
                     placeholder={`How can they improve ${category}? Please be as specific as you can...`}
                     required
                     style={{
@@ -745,8 +757,12 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
             {/* Finalize Review Button */}
             <button
               onClick={() => {
-                // Check if all required feedback fields are filled
-                const allFeedbackFilled = Object.values(ratingFeedback).every(feedback => feedback.trim() !== '');
+                // Check if all required feedback fields are filled with minimum 20 words
+                const allFeedbackFilled = Object.values(ratingFeedback).every(feedback => {
+                  const trimmedFeedback = feedback.trim();
+                  const wordCount = trimmedFeedback.split(/\s+/).filter(word => word.length > 0).length;
+                  return trimmedFeedback !== '' && wordCount >= 20;
+                });
                 const allRatingsSelected = Object.values(ratings).every(rating => rating >= 0);
                 
                 if (!allRatingsSelected) {
@@ -755,7 +771,7 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                 }
                 
                 if (!allFeedbackFilled) {
-                  alert('Please explain your answer for all rating categories before proceeding.');
+                  alert('Please provide at least 20 words of feedback for each rating category before proceeding.');
                   return;
                 }
                 
@@ -1072,7 +1088,11 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
             </h3>
             <textarea
               value={additionalFeedback}
-              onChange={(e) => setAdditionalFeedback(e.target.value)}
+              onChange={(e) => {
+                // Remove commas from the input
+                const value = e.target.value.replace(/,/g, '');
+                setAdditionalFeedback(value);
+              }}
               placeholder="Share any additional thoughts about the game..."
               style={{
                 width: '100%',

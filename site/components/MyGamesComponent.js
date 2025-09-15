@@ -2162,7 +2162,7 @@ function DetailView({
                         color: challenge.status === "Pending" ? "#999" : "#666"
                       }}>
                         <span><strong>Earnable:</strong> {challenge.earnableSSS} SSS</span>
-                        <span><strong>Earned:</strong> {challenge.sssEarned} SSS</span>
+                        <span><strong>Earned:</strong> {challenge.status != "Confirmed" ? 0 : challenge.earnableSSS} SSS</span>
                         <span><strong>Status:</strong> {challenge.status}</span>
                       </div>
                     </div>
