@@ -99,6 +99,15 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
 \$wgEnableAPI = true;
 \$wgEnableWriteAPI = true;
 
+# Enable skins
+wfLoadSkin( 'MinervaNeue' );
+wfLoadSkin( 'MonoBook' );
+wfLoadSkin( 'Timeless' );
+wfLoadSkin( 'Vector' );
+
+# Set default skin
+\$wgDefaultSkin = 'vector';
+
 # End of automatically generated LocalSettings.php
 EOF
 
