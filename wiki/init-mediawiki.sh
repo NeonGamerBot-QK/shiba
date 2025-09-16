@@ -21,6 +21,28 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
     echo "Testing database connection..."
     php /usr/local/bin/test-db-connection.php
     
+    # Run MediaWiki database setup
+    echo "Setting up MediaWiki database schema..."
+    DB_HOST_VAL=\${DB_HOST:-"a.selfhosted.hackclub.com"}
+    DB_PORT_VAL=\${DB_PORT:-"3306"}
+    DB_NAME_VAL=\${DB_NAME:-"default"}
+    DB_USER_VAL=\${DB_USER:-"mysql"}
+    DB_PASS_VAL=\${DB_PASSWORD:-"CHANGE_ME"}
+    ADMIN_PASS_VAL=\${ADMIN_PASS:-"adminpass"}
+    
+    php /var/www/html/maintenance/install.php \
+        --dbtype=mysql \
+        --dbserver="$DB_HOST_VAL" \
+        --dbport="$DB_PORT_VAL" \
+        --dbname="$DB_NAME_VAL" \
+        --dbuser="$DB_USER_VAL" \
+        --dbpass="$DB_PASS_VAL" \
+        --scriptpath="" \
+        --lang=en \
+        --pass="$ADMIN_PASS_VAL" \
+        "Shiba Wiki" \
+        "ShibaAdmin"
+    
     cat > /var/www/html/LocalSettings.php << EOF
 <?php
 # This file was automatically generated for Shiba Wiki
