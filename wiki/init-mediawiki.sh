@@ -9,6 +9,11 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
     echo "DB_USER: $DB_USER"
     echo "DB_NAME: $DB_NAME"
     echo "SITE_SERVER: $SITE_SERVER"
+    echo "MEDIAWIKI_DB_HOST: $MEDIAWIKI_DB_HOST"
+    echo "MEDIAWIKI_DB_PORT: $MEDIAWIKI_DB_PORT"
+    echo "MEDIAWIKI_DB_USER: $MEDIAWIKI_DB_USER"
+    echo "MEDIAWIKI_DB_NAME: $MEDIAWIKI_DB_NAME"
+    echo "MEDIAWIKI_SITE_SERVER: $MEDIAWIKI_SITE_SERVER"
     
     # Test database connection
     echo "Testing database connection..."
@@ -23,9 +28,9 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
 \$wgDBtype = "mysql";
 \$wgDBserver = "a.selfhosted.hackclub.com";  # Use external hostname
 \$wgDBport = "3306";  # Use external port
-\$wgDBname = getenv('DB_NAME') ?: "wikidb";
-\$wgDBuser = getenv('DB_USER') ?: "wikiuser";
-\$wgDBpassword = getenv('DB_PASSWORD') ?: "wikipass";
+\$wgDBname = getenv('DB_NAME') ?: "default";
+\$wgDBuser = getenv('DB_USER') ?: "mysql";
+\$wgDBpassword = getenv('DB_PASSWORD') ?: "CHANGE_ME";
 
 # Site settings
 \$wgSitename = getenv('SITE_NAME') ?: "Shiba Wiki";
