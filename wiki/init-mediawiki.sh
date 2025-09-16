@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Create LocalSettings.php if it doesn't exist
-if [ ! -f "/var/www/html/LocalSettings.php" ]; then
-    echo "Creating LocalSettings.php..."
+# Create LocalSettings.php if it doesn't exist or if we have environment variables
+if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
+    echo "Creating/Updating LocalSettings.php..."
+    # Remove existing LocalSettings.php to ensure clean recreation
+    rm -f /var/www/html/LocalSettings.php
     echo "Debug: Environment variables:"
     echo "DB_HOST: $DB_HOST"
     echo "DB_PORT: $DB_PORT"
