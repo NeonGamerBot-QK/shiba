@@ -108,6 +108,9 @@ wfLoadSkin( 'Vector' );
 # Set default skin
 \$wgDefaultSkin = 'vector';
 
+# Read-only configuration (except for admins)
+\$wgReadOnly = 'This wiki is currently in read-only mode. Only administrators can make edits.';
+
 # Logo configuration
 \$wgLogos = [
     '1x' => "\$wgResourceBasePath/resources/assets/logo.png",
