@@ -3,6 +3,16 @@
 # Create LocalSettings.php if it doesn't exist
 if [ ! -f "/var/www/html/LocalSettings.php" ]; then
     echo "Creating LocalSettings.php..."
+    echo "Debug: Environment variables:"
+    echo "DB_HOST: $DB_HOST"
+    echo "DB_PORT: $DB_PORT"
+    echo "DB_USER: $DB_USER"
+    echo "DB_NAME: $DB_NAME"
+    echo "SITE_SERVER: $SITE_SERVER"
+    
+    # Test database connection
+    echo "Testing database connection..."
+    php /usr/local/bin/test-db-connection.php
     
     cat > /var/www/html/LocalSettings.php << EOF
 <?php
@@ -58,9 +68,9 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
 \$wgMaxUploadSize = 100 * 1024 * 1024; // 100MB
 
 # Performance settings
-\$wgShowExceptionDetails = false;
-\$wgShowDBErrorBacktrace = false;
-\$wgShowSQLErrors = false;
+\$wgShowExceptionDetails = true;
+\$wgShowDBErrorBacktrace = true;
+\$wgShowSQLErrors = true;
 
 # Extensions (basic ones)
 \$wgEnableAPI = true;
