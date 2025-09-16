@@ -6,7 +6,11 @@ This is a MediaWiki installation for the Shiba project.
 
 1. **Start the wiki with Docker:**
    ```bash
-   docker-compose up -d
+   ./start-wiki.sh
+   ```
+   Or manually:
+   ```bash
+   docker-compose -f docker-compose.local.yml up -d
    ```
 
 2. **Access the wiki:**
@@ -17,7 +21,7 @@ This is a MediaWiki installation for the Shiba project.
 
 3. **Stop the wiki:**
    ```bash
-   docker-compose down
+   docker-compose -f docker-compose.local.yml down
    ```
 
 ## Manual Installation (Alternative)
@@ -45,6 +49,12 @@ The Docker setup includes:
 - MySQL 8.0 database
 - Pre-configured database connection
 - Admin account setup
+
+### Docker Compose Files
+
+- **`docker-compose.yml`** - For Coolify deployment (uses `expose` instead of `ports`)
+- **`docker-compose.local.yml`** - For local development (uses `ports` for direct access)
+- **`start-wiki.sh`** - Automatically uses the local compose file
 
 ## Files
 

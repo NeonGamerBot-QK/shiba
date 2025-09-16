@@ -32,10 +32,10 @@ fi
 # Check if using external database
 if [ -f .env ] && [ ! -z "$DB_HOST" ] && [ "$DB_HOST" != "database" ]; then
     echo "Starting MediaWiki with external database..."
-    docker-compose up -d mediawiki
+    docker-compose -f docker-compose.local.yml up -d mediawiki
 else
     echo "Starting MediaWiki with local database..."
-    docker-compose --profile local-db up -d
+    docker-compose -f docker-compose.local.yml --profile local-db up -d
 fi
 
 # Wait a moment for services to start

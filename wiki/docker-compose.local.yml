@@ -3,9 +3,9 @@ version: '3.8'
 services:
   mediawiki:
     image: mediawiki:1.41.1
-    container_name: shiba-wiki
-    expose:
-      - "80"
+    container_name: shiba-wiki-local
+    ports:
+      - "8080:80"
     volumes:
       - ./:/var/www/html
       - mediawiki-data:/var/www/html/images
@@ -26,7 +26,7 @@ services:
   # Local database service (only used if no external DB is configured)
   database:
     image: mysql:8.0
-    container_name: shiba-wiki-db
+    container_name: shiba-wiki-db-local
     environment:
       - MYSQL_ROOT_PASSWORD=rootpass
       - MYSQL_DATABASE=wikidb
