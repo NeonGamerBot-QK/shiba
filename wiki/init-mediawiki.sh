@@ -10,17 +10,6 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
     echo "DB_NAME: $DB_NAME"
     echo "SITE_SERVER: $SITE_SERVER"
     
-    # Test network connectivity
-    echo "Testing network connectivity..."
-    echo "Pinging database host..."
-    ping -c 3 $DB_HOST || echo "Ping failed"
-    
-    echo "Testing DNS resolution..."
-    nslookup $DB_HOST || echo "DNS lookup failed"
-    
-    echo "Testing port connectivity..."
-    nc -zv $DB_HOST $DB_PORT || echo "Port connection failed"
-    
     # Test database connection
     echo "Testing database connection..."
     php /usr/local/bin/test-db-connection.php
@@ -32,10 +21,11 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
 
 # Database settings
 \$wgDBtype = "mysql";
-\$wgDBserver = getenv('DB_HOST') ?: "database";
-\$wgDBname = getenv('DB_NAME') ?: "wikidb";
-\$wgDBuser = getenv('DB_USER') ?: "wikiuser";
-\$wgDBpassword = getenv('DB_PASSWORD') ?: "wikipass";
+\$wgDBserver = getenv('DB_HOST') ?: "a.selfhosted.hackclub.com";
+\$wgDBname = getenv('DB_NAME') ?: "default";
+\$wgDBuser = getenv('DB_USER') ?: "mysql";
+\$wgDBpassword = getenv('DB_PASSWORD') ?: "CHANGE_ME";
+\$wgDBport = getenv('DB_PORT') ?: "5432";
 
 # Site settings
 \$wgSitename = getenv('SITE_NAME') ?: "Shiba Wiki";
