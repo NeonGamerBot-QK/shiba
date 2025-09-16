@@ -23,3 +23,12 @@ out/
 ./api/uploads/
 
 ./api/local-storage/
+
+# Wiki
+./wiki/.env
+./wiki/LocalSettings.php
+./wiki/images/
+./wiki/cache/
+./wiki/tmp/
+./wiki/sitemap*
+./wiki/robots.txt

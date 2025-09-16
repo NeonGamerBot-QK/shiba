@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Les Meloures"
+		]
+	},
+	"apierror-categorytree-invalidjson": "D'Optioune mussen e gëltege JSON-Objet sinn"
+}
