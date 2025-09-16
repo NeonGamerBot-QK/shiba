@@ -3,7 +3,7 @@
 $host = 'a.selfhosted.hackclub.com';  // Always use external hostname
 $port = getenv('DB_PORT') ?: '3306';
 $user = getenv('DB_USER') ?: 'mysql';
-$pass = getenv('DB_PASSWORD') ?: 'CHANGE_ME';
+$pass = getenv('DB_PASSWORD');
 $name = getenv('DB_NAME') ?: 'default';
 
 echo "Testing database connection...\n";

@@ -29,10 +29,10 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
         --dbport="${DB_PORT:-3306}" \
         --dbname="${DB_NAME:-default}" \
         --dbuser="${DB_USER:-mysql}" \
-        --dbpass="${DB_PASSWORD:-CHANGE_ME}" \
+        --dbpass="${DB_PASSWORD}" \
         --scriptpath="" \
         --lang=en \
-        --pass="${ADMIN_PASS:-adminpass}" \
+        --pass="${ADMIN_PASS}" \
         "${SITE_NAME:-Shiba Wiki}" \
         "${ADMIN_USER:-admin}"
     
@@ -47,7 +47,7 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
 \$wgDBport = getenv('DB_PORT') ?: "3306";
 \$wgDBname = getenv('DB_NAME') ?: "default";
 \$wgDBuser = getenv('DB_USER') ?: "mysql";
-\$wgDBpassword = getenv('DB_PASSWORD') ?: "CHANGE_ME";
+\$wgDBpassword = getenv('DB_PASSWORD');
 
 # Site settings
 \$wgSitename = getenv('SITE_NAME') ?: "Shiba Wiki";
