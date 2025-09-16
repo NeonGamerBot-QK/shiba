@@ -23,25 +23,18 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
     
     # Run MediaWiki database setup
     echo "Setting up MediaWiki database schema..."
-    DB_HOST_VAL=\${DB_HOST:-"a.selfhosted.hackclub.com"}
-    DB_PORT_VAL=\${DB_PORT:-"3306"}
-    DB_NAME_VAL=\${DB_NAME:-"default"}
-    DB_USER_VAL=\${DB_USER:-"mysql"}
-    DB_PASS_VAL=\${DB_PASSWORD:-"CHANGE_ME"}
-    ADMIN_PASS_VAL=\${ADMIN_PASS:-"adminpass"}
-    
     php /var/www/html/maintenance/install.php \
         --dbtype=mysql \
-        --dbserver="$DB_HOST_VAL" \
-        --dbport="$DB_PORT_VAL" \
-        --dbname="$DB_NAME_VAL" \
-        --dbuser="$DB_USER_VAL" \
-        --dbpass="$DB_PASS_VAL" \
+        --dbserver="${DB_HOST:-a.selfhosted.hackclub.com}" \
+        --dbport="${DB_PORT:-3306}" \
+        --dbname="${DB_NAME:-default}" \
+        --dbuser="${DB_USER:-mysql}" \
+        --dbpass="${DB_PASSWORD:-CHANGE_ME}" \
         --scriptpath="" \
         --lang=en \
-        --pass="$ADMIN_PASS_VAL" \
-        "Shiba Wiki" \
-        "ShibaAdmin"
+        --pass="${ADMIN_PASS:-adminpass}" \
+        "${SITE_NAME:-Shiba Wiki}" \
+        "${ADMIN_USER:-admin}"
     
     cat > /var/www/html/LocalSettings.php << EOF
 <?php
