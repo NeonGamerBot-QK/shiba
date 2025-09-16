@@ -1,6 +1,6 @@
 <?php
 // Test database connection
-$host = getenv('DB_HOST') ?: 'a.selfhosted.hackclub.com';
+$host = 'a.selfhosted.hackclub.com';  // Always use external hostname
 $port = getenv('DB_PORT') ?: '3306';
 $user = getenv('DB_USER') ?: 'mysql';
 $pass = getenv('DB_PASSWORD') ?: 'CHANGE_ME';

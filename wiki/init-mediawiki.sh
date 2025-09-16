@@ -28,7 +28,7 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
 
 # Database settings
 \$wgDBtype = "mysql";
-\$wgDBserver = getenv('DB_HOST') ?: "a.selfhosted.hackclub.com";
+\$wgDBserver = "a.selfhosted.hackclub.com";  # Always use external hostname
 \$wgDBport = getenv('DB_PORT') ?: "3306";
 \$wgDBname = getenv('DB_NAME') ?: "default";
 \$wgDBuser = getenv('DB_USER') ?: "mysql";
