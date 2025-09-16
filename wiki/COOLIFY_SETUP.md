@@ -1,10 +1,10 @@
 # Coolify Deployment Guide for Shiba Wiki
 
 ## Current Issue
-Your MediaWiki deployment is failing because:
-1. **SSL Certificate Issues** - The site has certificate problems
-2. **MediaWiki Not Configured** - The container starts but MediaWiki needs initial setup
-3. **Database Connection** - Environment variables need to be properly set
+Your MediaWiki deployment is showing a 502 Bad Gateway error because:
+1. **Container Not Starting** - The MediaWiki container is failing to start properly
+2. **Database Connection Issues** - Environment variables need to be properly set
+3. **MediaWiki Setup Required** - The container needs to complete initial setup
 
 ## Step-by-Step Fix
 
@@ -34,10 +34,11 @@ After setting the environment variables:
 1. Go to your Coolify project
 2. Click "Deploy" or "Redeploy"
 3. Wait for the build to complete
+4. Check the container logs to ensure it's starting properly
 
 ### 3. Complete MediaWiki Setup
 
-Once the container is running:
+Once the container is running (check logs to confirm):
 1. Visit your wiki URL: `https://ho4cc0cs4s880cckwgg4o8kg.a.selfhosted.hackclub.com`
 2. You should see the MediaWiki installation wizard
 3. Follow the setup process:

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mediawiki:
-    build: .
+    image: mediawiki:1.41.1
     container_name: shiba-wiki
     expose:
       - "80"
