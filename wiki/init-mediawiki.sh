@@ -10,6 +10,17 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
     echo "DB_NAME: $DB_NAME"
     echo "SITE_SERVER: $SITE_SERVER"
     
+    # Test network connectivity
+    echo "Testing network connectivity..."
+    echo "Pinging database host..."
+    ping -c 3 $DB_HOST || echo "Ping failed"
+    
+    echo "Testing DNS resolution..."
+    nslookup $DB_HOST || echo "DNS lookup failed"
+    
+    echo "Testing port connectivity..."
+    nc -zv $DB_HOST $DB_PORT || echo "Port connection failed"
+    
     # Test database connection
     echo "Testing database connection..."
     php /usr/local/bin/test-db-connection.php

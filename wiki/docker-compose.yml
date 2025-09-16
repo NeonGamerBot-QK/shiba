@@ -22,6 +22,8 @@ services:
       - MEDIAWIKI_ADMIN_PASS=${ADMIN_PASS:-adminpass}
       - MEDIAWIKI_ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
     restart: unless-stopped
+    networks:
+      - default
 
   # Local database service (only used if no external DB is configured)
   database:
