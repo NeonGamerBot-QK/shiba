@@ -108,12 +108,30 @@ wfLoadSkin( 'Vector' );
 # Set default skin
 \$wgDefaultSkin = 'vector';
 
+# Logo configuration
+\$wgLogos = [
+    '1x' => "\$wgResourceBasePath/resources/assets/logo.png",
+    'icon' => "\$wgResourceBasePath/resources/assets/icon.png",
+    'wordmark' => [
+        'src' => "\$wgResourceBasePath/images/ShibaStar.png",
+        'width' => 120,
+        'height' => 120,
+    ],
+];
+
 # End of automatically generated LocalSettings.php
 EOF
 
     # Set proper permissions
     chown www-data:www-data /var/www/html/LocalSettings.php
     chmod 644 /var/www/html/LocalSettings.php
+    
+    # Set permissions for logo
+    if [ -f "/var/www/html/images/ShibaStar.png" ]; then
+        chown www-data:www-data /var/www/html/images/ShibaStar.png
+        chmod 644 /var/www/html/images/ShibaStar.png
+        echo "Logo permissions set successfully!"
+    fi
     
     echo "LocalSettings.php created successfully!"
 else
