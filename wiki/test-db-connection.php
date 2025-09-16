@@ -1,7 +1,7 @@
 <?php
 // Test database connection
-$host = 'pcswcokok4o0oow8ck0ggooc';  // Use internal hostname
-$port = getenv('DB_PORT') ?: '3306';
+$host = 'a.selfhosted.hackclub.com';  // Use external hostname
+$port = '5432';  // Use external port
 $user = getenv('DB_USER') ?: 'wikiuser';
 $pass = getenv('DB_PASSWORD') ?: 'wikipass';
 $name = getenv('DB_NAME') ?: 'wikidb';
