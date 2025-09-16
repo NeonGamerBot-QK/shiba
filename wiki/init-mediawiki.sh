@@ -109,6 +109,7 @@ wfLoadSkin( 'Vector' );
 \$wgDefaultSkin = 'vector';
 
 # Read-only configuration (except for admins)
+# Note: This will be overridden by the hook below to allow admin editing
 \$wgReadOnly = 'This wiki is currently in read-only mode. Only administrators can make edits.';
 
 # Hide editing interface for non-logged-in users
@@ -123,6 +124,25 @@ wfLoadSkin( 'Vector' );
 
 # Disable user registration
 \$wgDisableUserRegistration = true;
+
+# Allow admins to edit even when wiki is in read-only mode
+\$wgHooks['EditFilterMergedContent'][] = function( \$context, \$content, \$status, \$summary, \$user, \$minorEdit ) {
+    if ( \$user->isAllowed( 'edit' ) && in_array( 'sysop', \$user->getGroups() ) ) {
+        // Allow admins to edit even in read-only mode
+        return true;
+    }
+    return true;
+};
+
+# Override read-only mode for admins
+\$wgHooks['ReadOnly'][] = function( &\$readOnly, \$reason ) {
+    global \$wgUser;
+    if ( \$wgUser && \$wgUser->isAllowed( 'edit' ) && in_array( 'sysop', \$wgUser->getGroups() ) ) {
+        \$readOnly = false;
+        \$reason = '';
+    }
+    return true;
+};
 
 # Hide various UI elements for cleaner appearance
 \$wgShowExceptionDetails = false;
