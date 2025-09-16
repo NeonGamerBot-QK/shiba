@@ -21,11 +21,10 @@ if [ ! -f "/var/www/html/LocalSettings.php" ]; then
 
 # Database settings
 \$wgDBtype = "mysql";
-\$wgDBserver = getenv('DB_HOST') ?: "a.selfhosted.hackclub.com";
-\$wgDBname = getenv('DB_NAME') ?: "default";
-\$wgDBuser = getenv('DB_USER') ?: "mysql";
-\$wgDBpassword = getenv('DB_PASSWORD') ?: "CHANGE_ME";
-\$wgDBport = getenv('DB_PORT') ?: "5432";
+\$wgDBserver = "pcswcokok4o0oow8ck0ggooc";  # Use internal hostname
+\$wgDBname = getenv('DB_NAME') ?: "wikidb";
+\$wgDBuser = getenv('DB_USER') ?: "wikiuser";
+\$wgDBpassword = getenv('DB_PASSWORD') ?: "wikipass";
 
 # Site settings
 \$wgSitename = getenv('SITE_NAME') ?: "Shiba Wiki";

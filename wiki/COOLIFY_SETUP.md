@@ -13,9 +13,9 @@ Your MediaWiki deployment is showing a 502 Bad Gateway error because:
 In your Coolify project settings, add these environment variables:
 
 ```bash
-# Database Configuration (using public database URL)
-DB_HOST=a.selfhosted.hackclub.com
-DB_PORT=5432
+# Database Configuration (use your Coolify MySQL details)
+DB_HOST=mysql-database-pcswcokok4o0oow8ck0ggooc
+DB_PORT=3306
 DB_USER=mysql
 DB_PASSWORD=SOxOZr68REbGT0r1iouM7bSgcCmbfZ0pX3CFPgtVTOoeoODgo9pM6b4vByYCqkGT
 DB_NAME=default

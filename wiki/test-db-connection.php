@@ -1,10 +1,10 @@
 <?php
 // Test database connection
-$host = getenv('DB_HOST') ?: 'a.selfhosted.hackclub.com';
-$port = getenv('DB_PORT') ?: '5432';
-$user = getenv('DB_USER') ?: 'mysql';
-$pass = getenv('DB_PASSWORD') ?: 'CHANGE_ME';
-$name = getenv('DB_NAME') ?: 'default';
+$host = 'pcswcokok4o0oow8ck0ggooc';  // Use internal hostname
+$port = getenv('DB_PORT') ?: '3306';
+$user = getenv('DB_USER') ?: 'wikiuser';
+$pass = getenv('DB_PASSWORD') ?: 'wikipass';
+$name = getenv('DB_NAME') ?: 'wikidb';
 
 echo "Testing database connection...\n";
 echo "Host: $host\n";
