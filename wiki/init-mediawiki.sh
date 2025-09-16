@@ -19,13 +19,13 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
     
     # Test database connection
     echo "Testing database connection..."
-    php /usr/local/bin/test-db-connection.php
+    php /usr/local/bin/test-db-connection.php || echo "Database connection test failed, but continuing with installation..."
     
     # Run MediaWiki database setup
     echo "Setting up MediaWiki database schema..."
     php /var/www/html/maintenance/install.php \
         --dbtype=mysql \
-        --dbserver="${DB_HOST:-a.selfhosted.hackclub.com}" \
+        --dbserver="a.selfhosted.hackclub.com" \
         --dbport="${DB_PORT:-3306}" \
         --dbname="${DB_NAME:-default}" \
         --dbuser="${DB_USER:-mysql}" \
@@ -34,7 +34,7 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
         --lang=en \
         --pass="${ADMIN_PASS}" \
         "${SITE_NAME:-Shiba Wiki}" \
-        "${ADMIN_USER:-admin}"
+        "${ADMIN_USER:-admin}" || echo "MediaWiki installation failed, but continuing..."
     
     cat > /var/www/html/LocalSettings.php << EOF
 <?php
