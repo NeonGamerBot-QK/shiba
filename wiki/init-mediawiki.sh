@@ -111,6 +111,81 @@ wfLoadSkin( 'Vector' );
 # Read-only configuration (except for admins)
 \$wgReadOnly = 'This wiki is currently in read-only mode. Only administrators can make edits.';
 
+# Hide editing interface for non-logged-in users
+\$wgGroupPermissions['*']['edit'] = false;
+\$wgGroupPermissions['*']['createpage'] = false;
+\$wgGroupPermissions['*']['createtalk'] = false;
+\$wgGroupPermissions['*']['writeapi'] = false;
+
+# Hide login/logout buttons for a cleaner look
+\$wgShowIPinHeader = false;
+\$wgShowUserGroups = false;
+
+# Disable user registration
+\$wgDisableUserRegistration = true;
+
+# Hide various UI elements for cleaner appearance
+\$wgShowExceptionDetails = false;
+\$wgShowDBErrorBacktrace = false;
+\$wgShowSQLErrors = false;
+
+# Custom CSS to hide more UI elements for a cleaner look
+\$wgResourceModules['ext.gadget.cleanui'] = [
+    'styles' => 'cleanui.css',
+    'localBasePath' => '/var/www/html/',
+    'remoteExtPath' => '',
+];
+
+# Add custom CSS to hide edit buttons, talk pages, and other intimidating elements
+\$wgHooks['BeforePageDisplay'][] = function( \$out, \$skin ) {
+    \$out->addInlineStyle('
+        .mw-editsection,
+        .mw-editsection-like,
+        .ca-edit,
+        .ca-addsection,
+        .ca-talk,
+        .ca-history,
+        .ca-move,
+        .ca-delete,
+        .ca-protect,
+        .ca-watch,
+        .ca-unwatch,
+        .mw-indicators,
+        .mw-jump-link,
+        .vector-page-toolbar,
+        .vector-page-toolbar-container,
+        .vector-page-toolbar .mw-portlet,
+        .vector-user-menu,
+        .vector-user-links,
+        .mw-navigation,
+        .mw-footer,
+        .mw-footer-info,
+        .mw-footer-places,
+        .mw-footer-icons {
+            display: none !important;
+        }
+        
+        /* Make the main content area cleaner */
+        .mw-body {
+            margin-top: 0 !important;
+        }
+        
+        /* Hide the "This page is a stub" and other notices */
+        .ambox,
+        .metadata,
+        .catlinks,
+        .printfooter {
+            display: none !important;
+        }
+        
+        /* Clean up the header */
+        .vector-header-container {
+            border-bottom: none !important;
+        }
+    ');
+    return true;
+};
+
 # Logo configuration
 \$wgLogos = [
     '1x' => "\$wgScriptPath/images/ShibaStar.png",
