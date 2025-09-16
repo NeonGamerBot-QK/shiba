@@ -163,7 +163,13 @@ wfLoadSkin( 'Vector' );
         .mw-footer,
         .mw-footer-info,
         .mw-footer-places,
-        .mw-footer-icons {
+        .mw-footer-icons,
+        .mw-createaccount,
+        .mw-createaccount-join,
+        .ca-createaccount,
+        .createaccount,
+        .mw-ui-button[href*="createaccount"],
+        .mw-ui-button[href*="Special:UserLogin"] {
             display: none !important;
         }
         
