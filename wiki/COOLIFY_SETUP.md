@@ -84,10 +84,19 @@ After completing these steps, you should have:
 - ✅ Database connection established
 - ✅ Admin account created
 - ✅ Wiki accessible at your domain
+- ✅ Persistent storage for configuration and uploads
+
+## Data Persistence
+
+Your MediaWiki data is now persistent across redeployments:
+- **Configuration**: `LocalSettings.php` and other config files are saved in `mediawiki-config` volume
+- **Uploads**: Images and files are saved in `mediawiki-data` volume
+- **Database**: All content is stored in your Coolify MySQL database
 
 ## Next Steps
 
 Once MediaWiki is set up:
-1. Download the `LocalSettings.php` file from the setup wizard
-2. Upload it to your Coolify deployment (if needed)
+1. Complete the installation wizard (no need to manually download `LocalSettings.php`)
+2. Your configuration will be automatically saved to persistent storage
 3. Start creating content in your wiki!
+4. Everything will persist across Coolify redeployments

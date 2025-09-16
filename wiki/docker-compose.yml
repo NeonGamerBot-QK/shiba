@@ -8,6 +8,7 @@ services:
       - "80"
     volumes:
       - mediawiki-data:/var/www/html/images
+      - mediawiki-config:/var/www/html
     environment:
       - MEDIAWIKI_DB_TYPE=mysql
       - MEDIAWIKI_DB_HOST=${DB_HOST:-database}
@@ -39,4 +40,5 @@ services:
 
 volumes:
   mediawiki-data:
+  mediawiki-config:
   mysql-data:
