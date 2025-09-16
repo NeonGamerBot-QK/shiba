@@ -2,12 +2,11 @@ version: '3.8'
 
 services:
   mediawiki:
-    image: mediawiki:1.41.1
+    build: .
     container_name: shiba-wiki
     expose:
       - "80"
     volumes:
-      - ./:/var/www/html
       - mediawiki-data:/var/www/html/images
     environment:
       - MEDIAWIKI_DB_TYPE=mysql
@@ -17,7 +16,7 @@ services:
       - MEDIAWIKI_DB_PASSWORD=${DB_PASSWORD:-wikipass}
       - MEDIAWIKI_DB_NAME=${DB_NAME:-wikidb}
       - MEDIAWIKI_SITE_NAME=${SITE_NAME:-Shiba Wiki}
-      - MEDIAWIKI_SITE_SERVER=${SITE_SERVER:-http://localhost:8080}
+      - MEDIAWIKI_SITE_SERVER=${SITE_SERVER:-https://ho4cc0cs4s880cckwgg4o8kg.a.selfhosted.hackclub.com}
       - MEDIAWIKI_ADMIN_USER=${ADMIN_USER:-admin}
       - MEDIAWIKI_ADMIN_PASS=${ADMIN_PASS:-adminpass}
       - MEDIAWIKI_ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
