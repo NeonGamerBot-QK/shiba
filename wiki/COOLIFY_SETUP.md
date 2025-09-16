@@ -36,20 +36,19 @@ After setting the environment variables:
 3. Wait for the build to complete
 4. Check the container logs to ensure it's starting properly
 
-### 3. Complete MediaWiki Setup
+### 3. MediaWiki is Pre-Configured!
 
-Once the container is running (check logs to confirm):
-1. Visit your wiki URL: `https://ho4cc0cs4s880cckwgg4o8kg.a.selfhosted.hackclub.com`
-2. You should see the MediaWiki installation wizard
-3. Follow the setup process:
-   - **Database type**: MySQL
-   - **Database host**: `mysql-database-pcswcokok4o0oow8ck0ggooc`
-   - **Database name**: `default`
-   - **Database username**: `mysql`
-   - **Database password**: `SOxOZr68REbGT0r1iouM7bSgcCmbfZ0pX3CFPgtVTOoeoODgo9pM6b4vByYCqkGT`
-   - **Admin username**: `admin`
-   - **Admin password**: (choose a secure password)
-   - **Admin email**: `admin@yourdomain.com`
+The MediaWiki installation is now **automatically configured** with your database settings:
+- ✅ **No installation wizard needed** - LocalSettings.php is pre-generated
+- ✅ **Database connection configured** - Uses your Coolify MySQL automatically
+- ✅ **Secure keys generated** - Secret and upgrade keys are set
+- ✅ **Ready to use** - Just visit your wiki URL and start creating content!
+
+**Visit your wiki:** `https://ho4cc0cs4s880cckwgg4o8kg.a.selfhosted.hackclub.com`
+
+**Default admin account:**
+- Username: `admin`
+- Password: `adminpass` (change this after first login)
 
 ### 4. SSL Certificate Fix
 
