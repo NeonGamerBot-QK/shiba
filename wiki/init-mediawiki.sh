@@ -113,10 +113,10 @@ wfLoadSkin( 'Vector' );
 
 # Logo configuration
 \$wgLogos = [
-    '1x' => "\$wgResourceBasePath/resources/assets/logo.png",
-    'icon' => "\$wgResourceBasePath/resources/assets/icon.png",
+    '1x' => "\$wgScriptPath/images/ShibaStar.png",
+    'icon' => "\$wgScriptPath/images/ShibaStar.png",
     'wordmark' => [
-        'src' => "\$wgResourceBasePath/images/ShibaStar.png",
+        'src' => "\$wgScriptPath/images/ShibaStar.png",
         'width' => 120,
         'height' => 120,
     ],
@@ -134,6 +134,12 @@ EOF
         chown www-data:www-data /var/www/html/images/ShibaStar.png
         chmod 644 /var/www/html/images/ShibaStar.png
         echo "Logo permissions set successfully!"
+        echo "Logo file exists at: /var/www/html/images/ShibaStar.png"
+        ls -la /var/www/html/images/ShibaStar.png
+    else
+        echo "WARNING: Logo file not found at /var/www/html/images/ShibaStar.png"
+        echo "Contents of /var/www/html/images/:"
+        ls -la /var/www/html/images/ || echo "Images directory not found"
     fi
     
     echo "LocalSettings.php created successfully!"
