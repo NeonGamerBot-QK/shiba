@@ -55,7 +55,11 @@ if [ ! -f "/var/www/html/LocalSettings.php" ] || [ -n "$DB_PASSWORD" ]; then
 
 # Server settings
 \$wgServer = getenv('SITE_SERVER') ?: "http://localhost:8080";
-\$wgScriptPath = "";
+
+# Clean URLs - remove index.php from URLs
+\$wgUsePathInfo = true;
+\$wgArticlePath = "/\$1";
+\$wgScriptPath = "/w";
 \$wgResourceBasePath = \$wgScriptPath;
 
 # Upload settings
