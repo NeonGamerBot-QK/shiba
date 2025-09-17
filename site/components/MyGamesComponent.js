@@ -1957,6 +1957,17 @@ function DetailView({
           // Get challenges for this specific game (already filtered by API)
           const gameChallenges = game.challenges || [];
           
+          // Debug logging
+          console.log('Game challenges data:', gameChallenges);
+          gameChallenges.forEach((challenge, index) => {
+            console.log(`Challenge ${index}:`, {
+              status: challenge.status,
+              earnableSSS: challenge.earnableSSS,
+              sssEarned: challenge.sssEarned,
+              challenge: challenge.challenge
+            });
+          });
+          
           if (gameChallenges.length === 0) return null;
           
           return (
@@ -1974,7 +1985,7 @@ function DetailView({
                 color: "#333",
                 textAlign: "left"
               }}>
-                Game Challenges ({gameChallenges.filter(c => c.status === "Pending").length}/{gameChallenges.length})
+                Game Challenges ({gameChallenges.filter(c => c.status?.trim() === "Confirmed").length}/{gameChallenges.length})
               </h3>
               <div style={{
                 display: "flex",
@@ -1996,7 +2007,7 @@ function DetailView({
                   }}>
                     {/* iOS-style circular checkbox on the left */}
                     <div style={{ flexShrink: 0, marginTop: "2px" }}>
-                      {challenge.status === "Not Submitted" ? (
+                      {challenge.status?.trim() === "Not Submitted" ? (
                         <button
                           onClick={async () => {
                             // Toggle the challenge status between "Not Submitted" and "Pending"
@@ -2068,7 +2079,7 @@ function DetailView({
                             e.target.style.transform = "scale(1)";
                           }}
                         />
-                      ) : challenge.status === "Pending" ? (
+                      ) : challenge.status?.trim() === "Pending" ? (
                         <button
                           onClick={async () => {
                             // Toggle the challenge status between "Not Submitted" and "Pending"
@@ -2150,8 +2161,8 @@ function DetailView({
                       <div style={{ 
                         fontWeight: "bold", 
                         marginBottom: "6px", 
-                        color: challenge.status === "Pending" ? "#999" : "#333",
-                        textDecoration: challenge.status === "Pending" ? "line-through" : "none"
+                        color: challenge.status?.trim() === "Pending" ? "#999" : "#333",
+                        textDecoration: challenge.status?.trim() === "Pending" ? "line-through" : "none"
                       }}>
                         {challenge.challenge}
                       </div>
@@ -2159,10 +2170,10 @@ function DetailView({
                         display: "flex", 
                         gap: "16px", 
                         fontSize: "12px", 
-                        color: challenge.status === "Pending" ? "#999" : "#666"
+                        color: challenge.status?.trim() === "Pending" ? "#999" : "#666"
                       }}>
                         <span><strong>Earnable:</strong> {challenge.earnableSSS} SSS</span>
-                        <span><strong>Earned:</strong> {challenge.status != "Confirmed" ? 0 : challenge.earnableSSS} SSS</span>
+                        <span><strong>Earned:</strong> {challenge.status?.trim() === "Confirmed" ? (challenge.sssEarned || challenge.earnableSSS) : 0} SSS</span>
                         <span><strong>Status:</strong> {challenge.status}</span>
                       </div>
                     </div>
