@@ -563,6 +563,83 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   </div>
                 </div>
               )}
+              {Array.isArray(badges) && badges.includes('Shiba Pie') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/PieBadge.svg"
+                    alt="Shiba Pie"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#FFF8E1',
+                      border: '1px solid #FFB74D',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Shiba Pie
+                  </div>
+                </div>
+              )}
               {gameName ? (
                 gamePageUrl ? (
                   <a
