@@ -102,7 +102,11 @@ export default function MatchaModal({ isOpen, playSound, playClip, stopAll, isMu
   useEffect(() => {
     if (selectedGame && token && SlackId && hackatimeProjects.length === 0 && !loadingProjects) {
       setLoadingProjects(true);
-      fetch(`/api/hackatimeProjects?slackId=${encodeURIComponent(SlackId)}&gameId=${encodeURIComponent(selectedGame.id)}`)
+      let url = `/api/hackatimeProjects?slackId=${encodeURIComponent(SlackId)}&gameId=${encodeURIComponent(selectedGame.id)}`;
+      if (profile?.email) {
+        url += `&email=${encodeURIComponent(profile.email)}`;
+      }
+      fetch(url)
       .then(res => res.json())
       .then(data => {
         setHackatimeProjects(data.projects || []);
@@ -113,7 +117,7 @@ export default function MatchaModal({ isOpen, playSound, playClip, stopAll, isMu
         setLoadingProjects(false);
       });
     }
-  }, [selectedGame, token, SlackId, hackatimeProjects.length, loadingProjects]);
+  }, [selectedGame, token, SlackId, hackatimeProjects.length, loadingProjects, profile?.email]);
 
   if (!shouldRender) return null;
 

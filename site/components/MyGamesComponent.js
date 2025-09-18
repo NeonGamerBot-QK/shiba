@@ -932,6 +932,9 @@ function DetailView({
       console.log('Fetching projects for SlackId:', SlackId, 'and gameId:', game?.id);
       if (!SlackId) return;
       let url = `/api/hackatimeProjects?slackId=${encodeURIComponent(SlackId)}`;
+      if (userProfile?.email) {
+        url += `&email=${encodeURIComponent(userProfile.email)}`;
+      }
       if (game?.id) {
         url += `&gameId=${encodeURIComponent(game.id)}`;
       }
