@@ -133,14 +133,18 @@ async function performFullSync() {
     console.log(`Fetching Hackatime data for user ${i + 1}/${uniqueUsers.length}: ${slackId}`);
     
     try {
+      // Get user's email for fallback
+      const user = allUsers.find(u => u.fields?.['slack id'] === slackId);
+      const userEmail = user?.fields?.Email;
+      
       // Use retry with backoff for Hackatime API calls
       userHackatimeData[slackId] = await retryWithBackoff(async () => {
-        return await fetchHackatimeData(slackId);
+        return await fetchHackatimeData(slackId, userEmail);
       });
       
       // Fetch spans data for this user
       userSpansData[slackId] = await retryWithBackoff(async () => {
-        return await fetchHackatimeSpans(slackId);
+        return await fetchHackatimeSpans(slackId, userEmail);
       });
       
       // Small delay to be respectful to Hackatime API
@@ -307,19 +311,45 @@ async function fetchAllUsers() {
 }
 
 
-// Hackatime API integration with better error handling
-async function fetchHackatimeData(slackId) {
-  if (!slackId) throw new Error('Missing slackId');
+// Helper function to fetch Hackatime data by email
+async function fetchHackatimeDataByEmail(email) {
+  if (!email) throw new Error('Missing email');
   
+  console.log(`Looking up Hackatime user by email: ${email}`);
+  const lookupResponse = await fetch(`https://hackatime.hackclub.com/api/v1/users/lookup_email/${encodeURIComponent(email)}`, {
+    headers: {
+      "Rack-Attack-Bypass": process.env.HACKATIME_RATE_LIMIT_BYPASS || '',
+      "Authorization": "Bearer " + (process.env.STATS_API_KEY || ''),
+      "Accept": "application/json"
+    }
+  });
+  
+  if (!lookupResponse.ok) {
+    throw new Error(`Email lookup failed: ${lookupResponse.status}`);
+  }
+  
+  const lookupData = await lookupResponse.json().catch(() => ({}));
+  const hackatimeUserId = lookupData.user_id || lookupData.id;
+  
+  if (!hackatimeUserId) {
+    throw new Error('User not found with that email');
+  }
+  
+  console.log(`Found Hackatime user ID: ${hackatimeUserId}`);
+  return hackatimeUserId;
+}
+
+// Helper function to fetch stats for a given user ID
+async function fetchHackatimeStats(userId) {
   const start_date = process.env.HACKATIME_START_DATE || '2025-08-18';
   const end_date = process.env.HACKATIME_END_DATE || (() => {
     const d = new Date();
     d.setDate(d.getDate() + 1); // Add 1 day
     return d.toISOString().slice(0, 10);
   })();
-  const url = `https://hackatime.hackclub.com/api/v1/users/${encodeURIComponent(slackId)}/stats?features=projects&start_date=${start_date}&end_date=${end_date}`;
+  const url = `https://hackatime.hackclub.com/api/v1/users/${encodeURIComponent(userId)}/stats?features=projects&start_date=${start_date}&end_date=${end_date}`;
   
-  console.log(`Fetching Hackatime data for ${slackId}...`);
+  console.log(`Fetching Hackatime stats for user ID: ${userId}...`);
   const headers = { Accept: 'application/json' };
   if (process.env.RACK_ATTACK_BYPASS) {
     headers['Rack-Attack-Bypass'] = process.env.RACK_ATTACK_BYPASS;
@@ -340,6 +370,52 @@ async function fetchHackatimeData(slackId) {
   const total_seconds = data?.data?.total_seconds || 0;
   
   return { projects, total_seconds };
+}
+
+// Hackatime API integration with email fallback
+async function fetchHackatimeData(slackId, email = null) {
+  if (!slackId && !email) throw new Error('Missing both slackId and email');
+  
+  let hackatimeUserId;
+  let method = 'slackId';
+  let fallbackUsed = false;
+  
+  // Try slackId first if provided
+  if (slackId) {
+    try {
+      console.log(`Trying slackId method for: ${slackId}`);
+      hackatimeUserId = slackId;
+      const result = await fetchHackatimeStats(hackatimeUserId);
+      
+      // If we got projects from slackId, return them
+      if (result.projects.length > 0) {
+        console.log(`Found ${result.projects.length} projects using slackId method`);
+        return { ...result, method, fallbackUsed };
+      } else {
+        console.log('No projects found with slackId, falling back to email method');
+        fallbackUsed = true;
+      }
+    } catch (error) {
+      console.log(`slackId method failed, falling back to email method: ${error.message}`);
+      fallbackUsed = true;
+    }
+  }
+  
+  // Use email method if:
+  // 1. Only email is provided, OR
+  // 2. slackId was provided but returned no projects or failed
+  if (email && (!slackId || fallbackUsed)) {
+    try {
+      hackatimeUserId = await fetchHackatimeDataByEmail(email);
+      method = 'email';
+      const result = await fetchHackatimeStats(hackatimeUserId);
+      return { ...result, method, fallbackUsed };
+    } catch (error) {
+      throw new Error(`Both slackId and email methods failed. SlackId error: ${slackId ? 'no projects or failed' : 'not provided'}, Email error: ${error.message}`);
+    }
+  }
+  
+  throw new Error('No valid method available');
 }
 
 // Helper function to calculate project seconds with claiming to prevent double counting across games
@@ -410,13 +486,13 @@ async function updateGameHackatimeSeconds(gameId, seconds) {
 }
 
 // New function to fetch spans from Hackatime API
-async function fetchHackatimeSpans(slackId) {
-  if (!slackId) throw new Error('Missing slackId');
+async function fetchHackatimeSpans(slackId, email = null) {
+  if (!slackId && !email) throw new Error('Missing both slackId and email');
   
   const start_date = process.env.HACKATIME_START_DATE || '2025-08-18';
   
   // Get all projects for this user first
-  const hackatimeData = await fetchHackatimeData(slackId);
+  const hackatimeData = await fetchHackatimeData(slackId, email);
   const projects = hackatimeData.projects || [];
   
   const allSpans = {};
@@ -782,14 +858,17 @@ async function syncUserDaysActive() {
       // Get user's games from the pre-fetched data
       const userGames = gamesByUser[slackId] || [];
       
+      // Get user's email for fallback
+      const userEmail = fields.Email;
+      
       // Fetch Hackatime data for this user
       const hackatimeData = await retryWithBackoff(async () => {
-        return await fetchHackatimeData(slackId);
+        return await fetchHackatimeData(slackId, userEmail);
       });
       
       // Fetch spans data for this user
       const spansData = await retryWithBackoff(async () => {
-        return await fetchHackatimeSpans(slackId);
+        return await fetchHackatimeSpans(slackId, userEmail);
       });
       
       // Format the daysActive string (Shiba projects only)
