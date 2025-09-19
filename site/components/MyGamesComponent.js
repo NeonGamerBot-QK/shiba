@@ -1606,7 +1606,7 @@ function DetailView({
                 lineHeight: 1.5,
                 fontStyle: "italic"
               }}>
-                {game.Feedback.map((feedback, index) => {
+                {game.Feedback.filter(feedback => feedback && typeof feedback === 'string' && feedback.trim()).map((feedback, index) => {
                   const feedbackKey = `${game.id}-${index}`;
                   const currentResponse = feedbackResponses[feedbackKey];
                   console.log(`Feedback ${index} (${feedbackKey}):`, {
