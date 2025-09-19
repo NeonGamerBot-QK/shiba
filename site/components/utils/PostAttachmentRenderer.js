@@ -1256,11 +1256,11 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   </div>
                 </div>
               )}
-              {Array.isArray(badges) && badges.includes('Fist Of Furry') && (
+              {Array.isArray(badges) && badges.includes('Fist Of Fury') && (
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <img
                     src="/FistOfFurry.png"
-                    alt="Fist Of Furry"
+                    alt="Fist Of Fury"
                     style={{
                       width: 20,
                       height: 20,
@@ -1329,7 +1329,7 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                       transition: 'all 0.2s ease-out'
                     }}
                   >
-                    Fist Of Furry
+                    Fist Of Fury
                   </div>
                 </div>
               )}
