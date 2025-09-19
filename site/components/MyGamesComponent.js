@@ -1606,7 +1606,12 @@ function DetailView({
                 lineHeight: 1.5,
                 fontStyle: "italic"
               }}>
-                {game.Feedback.filter(feedback => feedback && typeof feedback === 'string' && feedback.trim()).map((feedback, index) => {
+                {game.Feedback.map((feedback, index) => {
+                  // Skip rendering if feedback is empty, but keep original index for responses
+                  if (!feedback || typeof feedback !== 'string' || !feedback.trim()) {
+                    return null;
+                  }
+                  
                   const feedbackKey = `${game.id}-${index}`;
                   const currentResponse = feedbackResponses[feedbackKey];
                   console.log(`Feedback ${index} (${feedbackKey}):`, {
