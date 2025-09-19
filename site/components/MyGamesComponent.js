@@ -1612,7 +1612,80 @@ function DetailView({
                       border: "1px solid rgba(0, 0, 0, 0.1)"
                     }}>
                       <div style={{ marginBottom: 8 }}>
-                        "{feedback}"
+                        {(() => {
+                          // Split feedback by common category patterns
+                          const categories = ['Additional Feedback:', 'Fun:', 'Art:', 'Creativity:', 'Audio:', 'Mood:'];
+                          let formattedFeedback = feedback;
+                          
+                          // Find the first category that exists in the feedback
+                          const firstCategoryIndex = categories.findIndex(cat => 
+                            formattedFeedback.toLowerCase().includes(cat.toLowerCase())
+                          );
+                          
+                          if (firstCategoryIndex !== -1) {
+                            // Split by categories and format
+                            const parts = [];
+                            let currentText = formattedFeedback;
+                            
+                            categories.forEach((category, index) => {
+                              const categoryLower = category.toLowerCase();
+                              const textLower = currentText.toLowerCase();
+                              
+                              if (textLower.includes(categoryLower)) {
+                                const categoryIndex = textLower.indexOf(categoryLower);
+                                const beforeCategory = currentText.substring(0, categoryIndex).trim();
+                                const afterCategory = currentText.substring(categoryIndex + category.length).trim();
+                                
+                                if (beforeCategory) {
+                                  parts.push(beforeCategory);
+                                }
+                                
+                                // Find the next category or end of text
+                                let nextCategoryIndex = -1;
+                                for (let i = index + 1; i < categories.length; i++) {
+                                  const nextCategoryLower = categories[i].toLowerCase();
+                                  const nextIndex = afterCategory.toLowerCase().indexOf(nextCategoryLower);
+                                  if (nextIndex !== -1) {
+                                    nextCategoryIndex = nextIndex;
+                                    break;
+                                  }
+                                }
+                                
+                                const categoryContent = nextCategoryIndex !== -1 
+                                  ? afterCategory.substring(0, nextCategoryIndex).trim()
+                                  : afterCategory;
+                                
+                                parts.push({ category, content: categoryContent });
+                                currentText = nextCategoryIndex !== -1 
+                                  ? afterCategory.substring(nextCategoryIndex)
+                                  : '';
+                              }
+                            });
+                            
+                            return (
+                              <div>
+                                {parts.map((part, partIndex) => {
+                                  if (typeof part === 'string') {
+                                    return (
+                                      <div key={partIndex} style={{ marginBottom: '8px' }}>
+                                        "{part}"
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div key={partIndex} style={{ marginBottom: '8px' }}>
+                                        <strong>{part.category}</strong> {part.content}
+                                      </div>
+                                    );
+                                  }
+                                })}
+                              </div>
+                            );
+                          } else {
+                            // No categories found, display as regular text
+                            return `"${feedback}"`;
+                          }
+                        })()}
                       </div>
                       <div style={{ 
                         display: "flex", 
