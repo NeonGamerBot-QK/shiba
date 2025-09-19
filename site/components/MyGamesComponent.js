@@ -1613,6 +1613,11 @@ function DetailView({
                     }}>
                       <div style={{ marginBottom: 8 }}>
                         {(() => {
+                          // Handle null/undefined feedback
+                          if (!feedback || typeof feedback !== 'string') {
+                            return `"${feedback || ''}"`;
+                          }
+                          
                           // Split feedback by common category patterns
                           const categories = ['Additional Feedback:', 'Fun:', 'Art:', 'Creativity:', 'Audio:', 'Mood:'];
                           let formattedFeedback = feedback;
