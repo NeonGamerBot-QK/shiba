@@ -223,6 +223,7 @@ export default async function handler(req, res) {
         AverageAudioScore: rec.fields?.AverageAudioScore || 0,
         AverageMoodScore: rec.fields?.AverageMoodScore || 0,
         numberComplete: rec.fields?.numberComplete || 0,
+        TicketsGiven: rec.fields?.TicketsGiven || null,
         Feedback: rec.fields?.Feedback || '',
         FeedbackStatus: rec.fields?.FeedbackStatus || [],
         FeedbackMessage: rec.fields?.FeedbackMessage || [],

@@ -187,6 +187,7 @@ export default function MyGamesComponent({
           AverageAudioScore: g.AverageAudioScore ?? 0,
           AverageMoodScore: g.AverageMoodScore ?? 0,
           numberComplete: g.numberComplete ?? 0,
+          TicketsGiven: g.TicketsGiven ?? null,
           Feedback: g.Feedback ?? '',
           FeedbackStatus: g.FeedbackStatus ?? [],
           FeedbackMessage: g.FeedbackMessage ?? [],
@@ -338,6 +339,7 @@ export default function MyGamesComponent({
           AverageAudioScore: g.AverageAudioScore ?? 0,
           AverageMoodScore: g.AverageMoodScore ?? 0,
           numberComplete: g.numberComplete ?? 0,
+          TicketsGiven: g.TicketsGiven ?? null,
           Feedback: g.Feedback ?? '',
           FeedbackStatus: g.FeedbackStatus ?? [],
           FeedbackMessage: g.FeedbackMessage ?? [],
@@ -1556,6 +1558,17 @@ function DetailView({
             isMiniature={true}
           />
           </div>
+          {game?.TicketsGiven != null && (
+            <div style={{ 
+              textAlign: "left",
+              fontSize: 14,
+              color: "#666",
+              fontWeight: "500",
+              marginBottom: 8
+            }}>
+              Playtests Given: {game.TicketsGiven} ({game?.numberComplete || 0} completed)
+            </div>
+          )}
           <div style={{ 
             textAlign: "left",
             fontSize: 14,
