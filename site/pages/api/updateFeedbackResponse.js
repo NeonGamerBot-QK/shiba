@@ -16,8 +16,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Server configuration error' });
   }
 
-  let { token, feedbackText, response, responseMessage } = req.body || {};
-  responseMessage = safeComma(responseMessage);
+  const { token, feedbackText, response, responseMessage } = req.body || {};
   
   if (!token || !feedbackText) {
     return res.status(400).json({ message: 'Missing required fields: token, feedbackText' });
