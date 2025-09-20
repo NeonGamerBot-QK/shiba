@@ -1911,14 +1911,6 @@ function DetailView({
                           </div>
                           <textarea
                             value={reportMessages[feedbackKey] || ""}
-                            onChange={(e) => {
-                              // Remove commas from the input
-                              const value = e.target.value.replace(/,/g, '');
-                              setReportMessages(prev => ({
-                                ...prev,
-                                [feedbackKey]: value
-                              }));
-                            }}
                             placeholder="Please explain why you're reporting this feedback..."
                             style={{
                               width: "100%",
