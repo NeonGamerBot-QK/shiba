@@ -28,7 +28,6 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
     mood: ''
   });
   const [additionalFeedback, setAdditionalFeedback] = useState('');
-  const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Audio state management
@@ -686,14 +685,6 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
                   </label>
                   <textarea
                     value={ratingFeedback[category]}
-                    onChange={(e) => {
-                      // Remove commas from the input
-                      const value = e.target.value.replace(/,/g, '');
-                      setRatingFeedback(prev => ({
-                        ...prev,
-                        [category]: value
-                      }));
-                    }}
                     placeholder={`How can they improve ${category}? Please be as specific as you can...`}
                     required
                     style={{
@@ -1088,11 +1079,6 @@ export default function PlaytestMode({ onExit, profile, playtestGame, playSound,
             </h3>
             <textarea
               value={additionalFeedback}
-              onChange={(e) => {
-                // Remove commas from the input
-                const value = e.target.value.replace(/,/g, '');
-                setAdditionalFeedback(value);
-              }}
               placeholder="Share any additional thoughts about the game..."
               style={{
                 width: '100%',
