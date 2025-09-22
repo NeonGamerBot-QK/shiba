@@ -191,7 +191,7 @@ export default function GlobalGamesComponent({ token, playtestMode, setPlaytestM
   );
 
   return (
-    <div className="global-area" style={{ width: '100vw', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <div className="global-area" style={{ width: '100vw', minHeight: '100vh', position: 'relative', overflow: 'visible' }}>
       <div className="global-background"></div>
       <div className="purple-circle" ref={circleRef}></div>
       
