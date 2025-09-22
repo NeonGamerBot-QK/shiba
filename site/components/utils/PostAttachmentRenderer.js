@@ -1641,6 +1641,622 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
                   </div>
                 </div>
               )}
+              {Array.isArray(badges) && badges.includes('Space Head') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/Space-Head.png"
+                    alt="Space Head"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#E3F2FD',
+                      border: '1px solid #2196F3',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Space Head
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Gastly Badge') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/gastly.png"
+                    alt="Gastly Badge"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#F3E5F5',
+                      border: '1px solid #9C27B0',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Gastly Badge
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Shiba Axtro Ship') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/axtro.png"
+                    alt="Shiba Axtro Ship"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#E8F4FD',
+                      border: '1px solid #4A90E2',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Shiba Axtro Ship
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Speedy Shiba Racer') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/ShibaRacer.svg"
+                    alt="Speedy Shiba Racer"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#FFF3E0',
+                      border: '1px solid #FF9800',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Speedy Shiba Racer
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Fish Keychain') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/fishGif.gif"
+                    alt="Fish Keychain"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#E0F2F1',
+                      border: '1px solid #009688',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Fish Keychain
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Shiba Omelette') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/ShibaEgg.png"
+                    alt="Shiba Omelette"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#FFF8E1',
+                      border: '1px solid #FFC107',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Shiba Omelette
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Shadow Merger') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/shadow.gif"
+                    alt="Shadow Merger"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#F5F5F5',
+                      border: '1px solid #616161',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Shadow Merger
+                  </div>
+                </div>
+              )}
+              {Array.isArray(badges) && badges.includes('Fatty Frog') && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src="/fatFrog.gif"
+                    alt="Fatty Frog"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
+                      border: '1px dotted transparent',
+                      borderRadius: '4px',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      // Add gentle bounce effect
+                      e.target.style.transform = 'scale(1.1)';
+                      e.target.style.border = '1px dotted #999';
+                      e.target.style.backgroundColor = 'white';
+                      setTimeout(() => {
+                        e.target.style.transform = 'scale(1)';
+                      }, 200);
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.display = 'block';
+                        // Trigger animation after display is set
+                        setTimeout(() => {
+                          popup.style.opacity = '1';
+                          popup.style.transform = 'translateX(-50%) scale(1)';
+                        }, 10);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Reset transform and border
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.border = '1px dotted transparent';
+                      e.target.style.backgroundColor = 'transparent';
+
+                      const popup = e.target.nextSibling;
+                      if (popup) {
+                        popup.style.opacity = '0';
+                        popup.style.transform = 'translateX(-50%) scale(0)';
+                        // Hide after animation completes
+                        setTimeout(() => {
+                          popup.style.display = 'none';
+                        }, 200);
+                      }
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: '#E8F5E8',
+                      border: '1px solid #4CAF50',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      fontSize: '6px',
+                      fontWeight: 'bold',
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      zIndex: 1000,
+                      display: 'none',
+                      marginBottom: '0px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      opacity: 0,
+                      transformOrigin: 'center bottom',
+                      transition: 'all 0.2s ease-out'
+                    }}
+                  >
+                    Fatty Frog
+                  </div>
+                </div>
+              )}
               {Array.isArray(badges) && badges.includes('Shiba As Gundam') && (
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <img
